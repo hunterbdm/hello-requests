@@ -14,7 +14,7 @@ import (
 	"strings"
 	"sync"
 
-	"hello-requests/http2/hpack"
+	"github.com/hunterbdm/hello-requests/http2/hpack"
 
 	"golang.org/x/net/http/httpguts"
 )

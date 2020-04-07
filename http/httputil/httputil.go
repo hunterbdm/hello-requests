@@ -8,7 +8,7 @@ package httputil
 
 import (
 	"io"
-	"hello-requests/http/internal"
+	"github.com/hunterbdm/hello-requests/http/internal"
 )
 
 // NewChunkedReader returns a new chunkedReader that translates the data read from r

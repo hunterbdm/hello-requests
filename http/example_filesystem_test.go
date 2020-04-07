@@ -6,7 +6,7 @@ package http_test
 
 import (
 	"log"
-	"hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http"
 	"os"
 	"strings"
 )

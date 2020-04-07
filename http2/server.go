@@ -32,7 +32,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http"
 	"io"
 	"log"
 	"math"
@@ -47,7 +47,7 @@ import (
 	"sync"
 	"time"
 
-	"hello-requests/http2/hpack"
+	"github.com/hunterbdm/hello-requests/http2/hpack"
 
 	"golang.org/x/net/http/httpguts"
 )

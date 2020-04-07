@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"hello-requests/http"
-	"hello-requests/http/httptest"
-	"hello-requests/http/httputil"
+	"github.com/hunterbdm/hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http/httptest"
+	"github.com/hunterbdm/hello-requests/http/httputil"
 	"net/url"
 	"strings"
 )

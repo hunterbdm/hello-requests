@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http"
 	"net/url"
 	"runtime"
 	"strings"

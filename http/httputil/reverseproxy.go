@@ -12,7 +12,7 @@ import (
 	"io"
 	"log"
 	"net"
-	"hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http"
 	"net/url"
 	"strings"
 	"sync"

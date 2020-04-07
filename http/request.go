@@ -14,7 +14,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"hello-requests/http/httptrace"
+	"github.com/hunterbdm/hello-requests/http/httptrace"
 	"io"
 	"io/ioutil"
 	"mime"
@@ -582,7 +582,7 @@ func (r *Request) write(w io.Writer, usingProxy bool, extraHeaders Header, waitF
 		}
 	}
 	if stringContainsCTLByte(ruri) {
-		return errors.New("hello-requests/http: can't write control character in Request.URL")
+		return errors.New("github.com/hunterbdm/hello-requests/http: can't write control character in Request.URL")
 	}
 	// TODO: validate r.Method too? At least it's less likely to
 	// come from an attacker (more likely to be a constant in
@@ -861,10 +861,10 @@ func NewRequestWithContext(ctx context.Context, method, url string, body io.Read
 		method = "GET"
 	}
 	if !validMethod(method) {
-		return nil, fmt.Errorf("hello-requests/http: invalid method %q", method)
+		return nil, fmt.Errorf("github.com/hunterbdm/hello-requests/http: invalid method %q", method)
 	}
 	if ctx == nil {
-		return nil, errors.New("hello-requests/http: nil Context")
+		return nil, errors.New("github.com/hunterbdm/hello-requests/http: nil Context")
 	}
 	u, err := urlpkg.Parse(url)
 	if err != nil {

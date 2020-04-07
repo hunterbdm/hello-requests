@@ -91,14 +91,14 @@ func TestCmdGoNoHTTPServer(t *testing.T) {
 	}
 	wantSym := map[string]bool{
 		// Verify these exist: (sanity checking this test)
-		"hello-requests/http.(*Client).Get":          true,
-		"hello-requests/http.(*Transport).RoundTrip": true,
+		"github.com/hunterbdm/hello-requests/http.(*Client).Get":          true,
+		"github.com/hunterbdm/hello-requests/http.(*Transport).RoundTrip": true,
 
 		// Verify these don't exist:
-		"hello-requests/http.http2Server":           false,
-		"hello-requests/http.(*Server).Serve":       false,
-		"hello-requests/http.(*ServeMux).ServeHTTP": false,
-		"hello-requests/http.DefaultServeMux":       false,
+		"github.com/hunterbdm/hello-requests/http.http2Server":           false,
+		"github.com/hunterbdm/hello-requests/http.(*Server).Serve":       false,
+		"github.com/hunterbdm/hello-requests/http.(*ServeMux).ServeHTTP": false,
+		"github.com/hunterbdm/hello-requests/http.DefaultServeMux":       false,
 	}
 	for sym, want := range wantSym {
 		got := bytes.Contains(out, []byte(sym))
@@ -119,7 +119,7 @@ func TestOmitHTTP2(t *testing.T) {
 	}
 	t.Parallel()
 	goTool := testenv.GoToolPath(t)
-	out, err := exec.Command(goTool, "test", "-short", "-tags=nethttpomithttp2", "hello-requests/http").CombinedOutput()
+	out, err := exec.Command(goTool, "test", "-short", "-tags=nethttpomithttp2", "github.com/hunterbdm/hello-requests/http").CombinedOutput()
 	if err != nil {
 		t.Fatalf("go test -short failed: %v, %s", err, out)
 	}
@@ -131,7 +131,7 @@ func TestOmitHTTP2(t *testing.T) {
 func TestOmitHTTP2Vet(t *testing.T) {
 	t.Parallel()
 	goTool := testenv.GoToolPath(t)
-	out, err := exec.Command(goTool, "vet", "-tags=nethttpomithttp2", "hello-requests/http").CombinedOutput()
+	out, err := exec.Command(goTool, "vet", "-tags=nethttpomithttp2", "github.com/hunterbdm/hello-requests/http").CombinedOutput()
 	if err != nil {
 		t.Fatalf("go vet failed: %v, %s", err, out)
 	}

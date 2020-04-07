@@ -7,7 +7,7 @@ package http_test
 import (
 	"fmt"
 	"log"
-	"hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http"
 	"sync"
 )
 

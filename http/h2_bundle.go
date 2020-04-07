@@ -28,7 +28,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"hello-requests/http/httptrace"
+	"github.com/hunterbdm/hello-requests/http/httptrace"
 	"io"
 	"io/ioutil"
 	"log"
@@ -47,7 +47,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"hello-requests/http2/hpack"
+	"github.com/hunterbdm/hello-requests/http2/hpack"
 
 	"golang.org/x/net/http/httpguts"
 	"golang.org/x/net/idna"
@@ -7409,7 +7409,7 @@ func (cc *http2ClientConn) putFrameScratchBuffer(buf []byte) {
 
 // errRequestCanceled is a copy of goget/http's errRequestCanceled because it's not
 // exported. At least they'll be DeepEqual for h1-vs-h2 comparisons tests.
-var http2errRequestCanceled = errors.New("hello-requests/http: request canceled")
+var http2errRequestCanceled = errors.New("github.com/hunterbdm/hello-requests/http: request canceled")
 
 func http2commaSeparatedTrailers(req *Request) (string, error) {
 	keys := make([]string, 0, len(req.Trailer))
@@ -8522,7 +8522,7 @@ func (b http2transportResponseBody) Read(p []byte) (n int, err error) {
 		if int64(n) > cs.bytesRemain {
 			n = int(cs.bytesRemain)
 			if err == nil {
-				err = errors.New("hello-requests/http: server replied with more than declared Content-Length; truncated")
+				err = errors.New("github.com/hunterbdm/hello-requests/http: server replied with more than declared Content-Length; truncated")
 				cc.writeStreamReset(cs.ID, http2ErrCodeProtocol, err)
 			}
 			cs.readErr = err

@@ -7,8 +7,8 @@ package pprof
 import (
 	"bytes"
 	"io/ioutil"
-	"hello-requests/http"
-	"hello-requests/http/httptest"
+	"github.com/hunterbdm/hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http/httptest"
 	"runtime/pprof"
 	"testing"
 )

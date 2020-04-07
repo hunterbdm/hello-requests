@@ -585,7 +585,7 @@ var reqWriteTests = []reqWriteTest{
 				RawQuery: "new\nline", // or any CTL
 			},
 		},
-		WantError: errors.New("hello-requests/http: can't write control character in Request.URL"),
+		WantError: errors.New("github.com/hunterbdm/hello-requests/http: can't write control character in Request.URL"),
 	},
 }
 

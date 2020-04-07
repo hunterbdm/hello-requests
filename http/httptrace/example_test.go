@@ -7,8 +7,8 @@ package httptrace_test
 import (
 	"fmt"
 	"log"
-	"hello-requests/http"
-	"hello-requests/http/httptrace"
+	"github.com/hunterbdm/hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http/httptrace"
 )
 
 func Example() {

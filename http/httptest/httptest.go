@@ -11,7 +11,7 @@ import (
 	"crypto/tls"
 	"io"
 	"io/ioutil"
-	"hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http"
 	"strings"
 )
 

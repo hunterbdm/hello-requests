@@ -7,9 +7,9 @@ package cookiejar_test
 import (
 	"fmt"
 	"log"
-	"hello-requests/http"
-	"hello-requests/http/cookiejar"
-	"hello-requests/http/httptest"
+	"github.com/hunterbdm/hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http/cookiejar"
+	"github.com/hunterbdm/hello-requests/http/httptest"
 	"net/url"
 )
 

@@ -8,7 +8,7 @@ package http2
 
 import (
 	"crypto/tls"
-	"hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http"
 	"sync"
 )
 

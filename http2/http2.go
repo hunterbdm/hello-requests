@@ -20,7 +20,7 @@ import (
 	"bufio"
 	"crypto/tls"
 	"fmt"
-	"hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http"
 	"io"
 	"os"
 	"sort"

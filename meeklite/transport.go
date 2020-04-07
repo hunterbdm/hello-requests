@@ -5,7 +5,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http"
 	"net"
 	"net/url"
 	"strconv"
@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"hello-requests/http2"
+	"github.com/hunterbdm/hello-requests/http2"
 
 	utls "github.com/refraction-networking/utls"
 )

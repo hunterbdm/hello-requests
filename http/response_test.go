@@ -13,7 +13,7 @@ import (
 	"go/token"
 	"io"
 	"io/ioutil"
-	"hello-requests/http/internal"
+	"github.com/hunterbdm/hello-requests/http/internal"
 	"net/url"
 	"reflect"
 	"regexp"

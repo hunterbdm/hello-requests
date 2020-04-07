@@ -13,7 +13,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net"
-	"hello-requests/http/internal"
+	"github.com/hunterbdm/hello-requests/http/internal"
 	"strings"
 	"testing"
 )

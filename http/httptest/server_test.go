@@ -8,7 +8,7 @@ import (
 	"bufio"
 	"io/ioutil"
 	"net"
-	"hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http"
 	"testing"
 )
 

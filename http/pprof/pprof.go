@@ -10,10 +10,10 @@
 // The handled paths all begin with /debug/pprof/.
 //
 // To use pprof, link this package into your program:
-//	import _ "hello-requests/http/pprof"
+//	import _ "github.com/hunterbdm/hello-requests/http/pprof"
 //
 // If your application is not already running an http server, you
-// need to start one. Add "hello-requests/http" and "log" to your imports and
+// need to start one. Add "github.com/hunterbdm/hello-requests/http" and "log" to your imports and
 // the following code to your main function:
 //
 // 	go func() {
@@ -61,7 +61,7 @@ import (
 	"html/template"
 	"io"
 	"log"
-	"hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http"
 	"os"
 	"runtime"
 	"runtime/pprof"

@@ -7,7 +7,7 @@
 package http2
 
 import (
-	"hello-requests/http/httptrace"
+	"github.com/hunterbdm/hello-requests/http/httptrace"
 	"net/textproto"
 )
 

@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http"
 	"strconv"
 	"strings"
 

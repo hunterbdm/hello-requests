@@ -8,11 +8,11 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http"
 	"log"
 	"testing"
 
-	http2 "hello-requests/http2"
+	http2 "github.com/hunterbdm/hello-requests/http2"
 )
 
 func TestSettingsAckSwallowWriter(t *testing.T) {

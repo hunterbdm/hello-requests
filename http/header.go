@@ -6,7 +6,7 @@ package http
 
 import (
 	"fmt"
-	"hello-requests/http/httptrace"
+	"github.com/hunterbdm/hello-requests/http/httptrace"
 	"io"
 	"net/textproto"
 	"sort"

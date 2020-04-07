@@ -9,7 +9,7 @@ package httptrace
 import (
 	"context"
 	"crypto/tls"
-	"hello-requests/internal/nettrace"
+	"github.com/hunterbdm/hello-requests/internal/nettrace"
 	"net"
 	"net/textproto"
 	"reflect"

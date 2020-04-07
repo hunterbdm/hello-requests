@@ -15,7 +15,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http"
 	"io"
 	"log"
 	"net"
@@ -23,8 +23,8 @@ import (
 	"os"
 	"strings"
 
-	http2 "hello-requests/http2"
-	"hello-requests/http2/hpack"
+	http2 "github.com/hunterbdm/hello-requests/http2"
+	"github.com/hunterbdm/hello-requests/http2/hpack"
 
 	"golang.org/x/net/http/httpguts"
 )

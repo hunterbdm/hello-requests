@@ -7,7 +7,7 @@ package http2
 import (
 	"errors"
 	"fmt"
-	"hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http"
 	"io"
 	"io/ioutil"
 	"reflect"

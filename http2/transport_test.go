@@ -12,9 +12,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"hello-requests/http"
-	"hello-requests/http/httptest"
-	"hello-requests/http/httptrace"
+	"github.com/hunterbdm/hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http/httptest"
+	"github.com/hunterbdm/hello-requests/http/httptrace"
 	"io"
 	"io/ioutil"
 	"log"
@@ -33,7 +33,7 @@ import (
 	"testing"
 	"time"
 
-	"hello-requests/http2/hpack"
+	"github.com/hunterbdm/hello-requests/http2/hpack"
 )
 
 var (

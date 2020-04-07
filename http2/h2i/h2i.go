@@ -26,7 +26,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http"
 	"io"
 	"log"
 	"net"
@@ -35,12 +35,12 @@ import (
 	"strconv"
 	"strings"
 
-	http2 "hello-requests/http2"
+	http2 "github.com/hunterbdm/hello-requests/http2"
 
 	"golang.org/x/crypto/ssh/terminal"
 
 	//"golang.org/x/net/http2"
-	"hello-requests/http2/hpack"
+	"github.com/hunterbdm/hello-requests/http2/hpack"
 	//"golang.org/x/net/http2/hpack"
 )
 

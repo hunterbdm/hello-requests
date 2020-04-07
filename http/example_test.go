@@ -10,7 +10,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http"
 	"os"
 	"os/signal"
 )

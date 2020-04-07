@@ -15,8 +15,8 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"hello-requests/http"
-	"hello-requests/http/httptrace"
+	"github.com/hunterbdm/hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http/httptrace"
 	"io"
 	"io/ioutil"
 	"log"
@@ -31,7 +31,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"hello-requests/http2/hpack"
+	"github.com/hunterbdm/hello-requests/http2/hpack"
 
 	"golang.org/x/net/http/httpguts"
 

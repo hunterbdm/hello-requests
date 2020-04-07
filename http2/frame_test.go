@@ -13,7 +13,7 @@ import (
 	"testing"
 	"unsafe"
 
-	"hello-requests/http2/hpack"
+	"github.com/hunterbdm/hello-requests/http2/hpack"
 )
 
 func testFramer() (*Framer, *bytes.Buffer) {

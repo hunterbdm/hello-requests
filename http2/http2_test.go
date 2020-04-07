@@ -9,14 +9,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http"
 	"os/exec"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
-	"hello-requests/http2/hpack"
+	"github.com/hunterbdm/hello-requests/http2/hpack"
 )
 
 var knownFailing = flag.Bool("known_failing", false, "Run known-failing tests.")

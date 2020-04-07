@@ -13,7 +13,7 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http"
 	"os"
 	"os/exec"
 	"strconv"

@@ -4,15 +4,17 @@ import (
 	"bytes"
 	"compress/gzip"
 	"errors"
-	"github.com/hunterbdm/hello-requests/http"
-	"github.com/hunterbdm/hello-requests/meeklite"
 	"io/ioutil"
 
-	"github.com/hunterbdm/hello-requests/http/cookiejar"
+	"github.com/hunterbdm/hello-requests/http"
+	"github.com/hunterbdm/hello-requests/meeklite"
+
 	"net/textproto"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/hunterbdm/hello-requests/http/cookiejar"
 
 	utls "github.com/refraction-networking/utls"
 	"golang.org/x/net/proxy"
@@ -49,6 +51,7 @@ type Options struct {
 
 // Response defines the results of a request
 type Response struct {
+	ID         string
 	Error      error
 	StatusCode int
 	Headers    map[string][]string
@@ -526,6 +529,7 @@ func request(opts Options) (*Response, error) {
 	}
 
 	return &Response{
+		ID:         opts.ID,
 		Body:       body,
 		StatusCode: resp.StatusCode,
 		Headers:    resp.Header,

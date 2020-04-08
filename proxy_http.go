@@ -31,11 +31,12 @@ import (
 	"bufio"
 	"encoding/base64"
 	"fmt"
-	"github.com/hunterbdm/hello-requests/http"
-	"github.com/hunterbdm/hello-requests/http/httputil"
 	"net"
 	"net/url"
 	"time"
+
+	"github.com/hunterbdm/hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http/httputil"
 
 	"golang.org/x/net/proxy"
 )

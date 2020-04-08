@@ -5,14 +5,14 @@
 package http
 
 import (
-	"fmt"
-	"github.com/hunterbdm/hello-requests/http/httptrace"
 	"io"
 	"net/textproto"
 	"sort"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/hunterbdm/hello-requests/http/httptrace"
 )
 
 // A Header represents the key-value pairs in an HTTP header.
@@ -195,8 +195,6 @@ func (h Header) writeSubset(w io.Writer, exclude map[string]bool, trace *httptra
 		for _, v := range kv.values {
 			v = headerNewlineToSpace.Replace(v)
 			v = textproto.TrimString(v)
-
-			fmt.Println(kv.key)
 
 			for _, s := range []string{kv.key, ": ", v, "\r\n"} {
 				if _, err := ws.WriteString(s); err != nil {

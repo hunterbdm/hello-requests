@@ -75,7 +75,7 @@ func newClient(rawProxy, mimicBrowser string) (*meeklite.RTClient, error) {
 		if len(proxySplit) == 2 { // ip:port
 			proxyURI, err = url.Parse("http://" + rawProxy)
 		} else if len(proxySplit) == 4 { // ip:port:user:pass
-			proxyURI, err = url.Parse("http://" + proxySplit[0] + ":" + proxySplit[1])
+			proxyURI, err = url.Parse("http://" + proxySplit[2] + ":" + proxySplit[3] + "@" + proxySplit[0] + ":" + proxySplit[1])
 		}
 
 		dialer, err := proxy.FromURL(proxyURI, proxy.Direct)

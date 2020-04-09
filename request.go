@@ -30,7 +30,8 @@ var (
 	// IPHONE11 is the 'key' for the iPhone 11 clientHelloSpec
 	IPHONE11 = "iPhone11"
 
-	clientMap = map[string]*meeklite.RTClient{}
+	skipVerifyCerts = false
+	clientMap       = map[string]*meeklite.RTClient{}
 )
 
 type Headers map[string]string
@@ -85,7 +86,7 @@ func newClient(rawProxy, mimicBrowser string) (*meeklite.RTClient, error) {
 		dialFn = dialer.Dial
 	}
 
-	rtc := meeklite.NewRTC(dialFn, &clientHelloSpec)
+	rtc := meeklite.NewRTC(dialFn, &clientHelloSpec, skipVerifyCerts)
 
 	return rtc, nil
 }
@@ -453,6 +454,11 @@ func Jar() *cookiejar.Jar {
 func Do(opts Options) (*Response, error) {
 	resp, err := request(opts)
 	return resp, err
+}
+
+// DisableCertChecks disables extra certificate verification (for dev testing mode)
+func DisableCertChecks() {
+	skipVerifyCerts = true
 }
 
 // Request does the full process of managing a client and processing the http/https request

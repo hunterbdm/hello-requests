@@ -5,13 +5,14 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"github.com/hunterbdm/hello-requests/http"
 	"net"
 	"net/url"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/hunterbdm/hello-requests/http"
 
 	"github.com/hunterbdm/hello-requests/http2"
 
@@ -34,6 +35,8 @@ type roundTripper struct {
 	transport       http.RoundTripper
 
 	initConn net.Conn
+
+	skipVerifyCerts bool
 }
 
 // RTClient stores and manages the roundTripper
@@ -110,7 +113,27 @@ func (rt *roundTripper) dialTLS(network, addr string) (net.Conn, error) {
 		host = addr
 	}
 
-	var verifyPeerCertificateFn func([][]byte, [][]*x509.Certificate) error
+	//var verifyPeerCertificateFn func([][]byte, [][]*x509.Certificate) error
+
+	verifyPeerCertificateFn := func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
+		if rt.skipVerifyCerts {
+			return nil
+		}
+
+		for _, rawCert := range rawCerts {
+			cert, err := x509.ParseCertificate(rawCert)
+			if err != nil {
+				continue
+			}
+
+			lowered := strings.ToLower(cert.Subject.CommonName)
+			if strings.Contains(lowered, "charles") || strings.Contains(lowered, "burp") || strings.Contains(lowered, "proxy") {
+				return errors.New("Failed certificate check")
+			}
+		}
+
+		return nil
+	}
 
 	conn := utls.UClient(rawConn, &utls.Config{
 		ServerName:                  host,
@@ -189,11 +212,12 @@ func getDialTLSAddr(u *url.URL) string {
 }
 
 // NewRTC creates a RTClient with a roundTripper
-func NewRTC(dialFn DialFunc, clientHelloSpec *utls.ClientHelloSpec) *RTClient {
+func NewRTC(dialFn DialFunc, clientHelloSpec *utls.ClientHelloSpec, skipVerifyCerts bool) *RTClient {
 	return &RTClient{
 		rt: roundTripper{
 			dialFn:          dialFn,
 			clientHelloSpec: clientHelloSpec,
+			skipVerifyCerts: skipVerifyCerts,
 		},
 	}
 }

@@ -53,7 +53,7 @@ type Options struct {
 // Response defines the results of a request
 type Response struct {
 	ID         string
-	Error      error
+	Error      string
 	StatusCode int
 	Headers    map[string][]string
 	Body       string
@@ -465,7 +465,7 @@ func DisableCertChecks() {
 func request(opts Options) (*Response, error) {
 	// Validate request options
 	if opts.URL == "" {
-		return &Response{Error: errors.New("missing parameter URL")}, errors.New("missing parameter URL")
+		return &Response{ID: opts.ID, Error: errors.New("missing parameter URL").Error()}, errors.New("missing parameter URL")
 	}
 	if opts.Method == "" {
 		opts.Method = "GET"
@@ -476,7 +476,7 @@ func request(opts Options) (*Response, error) {
 	// Find client from history or create new one
 	client, err := getClient(parsedURL.Hostname(), opts.Proxy, opts.MimicBrowser)
 	if err != nil {
-		return &Response{Error: err}, err
+		return &Response{ID: opts.ID, Error: err.Error()}, err
 	}
 
 	// Set cookie header
@@ -514,13 +514,13 @@ func request(opts Options) (*Response, error) {
 		defer resp.Body.Close()
 	}
 	if err != nil {
-		return &Response{Error: err}, err
+		return &Response{ID: opts.ID, Error: err.Error()}, err
 	}
 
 	var body string
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return &Response{Error: err}, err
+		return &Response{ID: opts.ID, Error: err.Error()}, err
 	}
 	// Decompress body if needed
 	if vals, ok := resp.Header["Content-Encoding"]; ok {

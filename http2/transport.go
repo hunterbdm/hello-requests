@@ -15,8 +15,6 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/hunterbdm/hello-requests/http"
-	"github.com/hunterbdm/hello-requests/http/httptrace"
 	"io"
 	"io/ioutil"
 	"log"
@@ -30,6 +28,9 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/hunterbdm/hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http/httptrace"
 
 	"github.com/hunterbdm/hello-requests/http2/hpack"
 
@@ -1474,10 +1475,11 @@ func (cc *ClientConn) encodeHeaders(req *http.Request, addGzipHeader bool, trail
 		}
 
 		var didUA bool
+		var didContentLength bool
 
 		/* Edited code starts here */
 		processHeader := func(k string, vv []string) {
-			if strings.EqualFold(k, "host") || strings.EqualFold(k, "content-length") {
+			if strings.EqualFold(k, "host") {
 				// Host is :authority, already sent.
 				// Content-Length is automatic, set below.
 				return
@@ -1525,6 +1527,8 @@ func (cc *ClientConn) encodeHeaders(req *http.Request, addGzipHeader bool, trail
 					}
 				}
 				return
+			} else if strings.EqualFold(k, "content-length") {
+				didContentLength = true
 			}
 
 			for _, v := range vv {
@@ -1561,11 +1565,13 @@ func (cc *ClientConn) encodeHeaders(req *http.Request, addGzipHeader bool, trail
 				processHeader(k, vv)
 			}
 		}
-		/* Edited code ends here */
 
-		if shouldSendReqContentLength(req.Method, contentLength) {
+		if shouldSendReqContentLength(req.Method, contentLength) && !didContentLength {
 			f("content-length", strconv.FormatInt(contentLength, 10))
 		}
+
+		/* Edited code ends here */
+
 		if addGzipHeader {
 			f("accept-encoding", "gzip")
 		}

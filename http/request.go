@@ -14,7 +14,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/hunterbdm/hello-requests/http/httptrace"
 	"io"
 	"io/ioutil"
 	"mime"
@@ -26,6 +25,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/hunterbdm/hello-requests/http/httptrace"
 
 	"golang.org/x/net/idna"
 )
@@ -636,10 +637,10 @@ func (r *Request) write(w io.Writer, usingProxy bool, extraHeaders Header, waitF
 	if err != nil {
 		return err
 	}
-	err = tw.writeHeader(w, trace)
-	if err != nil {
-		return err
-	}
+	// err = tw.writeHeader(w, trace)
+	// if err != nil {
+	// 	return err
+	// }
 
 	/* Edited code starts here */
 
@@ -649,6 +650,11 @@ func (r *Request) write(w io.Writer, usingProxy bool, extraHeaders Header, waitF
 			return err
 		}
 	} else {
+		err = tw.writeHeader(w, trace)
+		if err != nil {
+			return err
+		}
+
 		err = r.Header.writeSubset(w, reqWriteExcludeHeader, trace)
 		if err != nil {
 			return err

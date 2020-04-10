@@ -65,8 +65,6 @@ func newClient(rawProxy, mimicBrowser string) (*meeklite.RTClient, error) {
 		mimicBrowser = CHROME
 	}
 
-	clientHelloSpec := getHelloSpec(mimicBrowser)
-
 	dialFn := proxy.Direct.Dial
 	if rawProxy != "" {
 		proxySplit := strings.Split(rawProxy, ":")
@@ -86,7 +84,7 @@ func newClient(rawProxy, mimicBrowser string) (*meeklite.RTClient, error) {
 		dialFn = dialer.Dial
 	}
 
-	rtc := meeklite.NewRTC(dialFn, &clientHelloSpec, skipVerifyCerts)
+	rtc := meeklite.NewRTC(dialFn, getHelloSpec, skipVerifyCerts, mimicBrowser)
 
 	return rtc, nil
 }
@@ -109,10 +107,10 @@ func getClient(hostname, proxy, mimicBrowser string) (*meeklite.RTClient, error)
 	return client, nil
 }
 
-func getHelloSpec(specName string) utls.ClientHelloSpec {
+func getHelloSpec(specName string) *utls.ClientHelloSpec {
 	switch specName {
 	case CHROME: // Google Chrome (version:80.0.3987.163) (os:windows10) (ja3 hash:66918128f1b9b03303d77c6f2eefd128)
-		return utls.ClientHelloSpec{
+		return &utls.ClientHelloSpec{
 			CipherSuites: []uint16{
 				utls.GREASE_PLACEHOLDER,
 				utls.TLS_AES_128_GCM_SHA256,
@@ -189,7 +187,7 @@ func getHelloSpec(specName string) utls.ClientHelloSpec {
 			TLSVersMin: utls.VersionTLS10,
 		}
 	case FIREFOX: // Firefox (version:74.0) (os:windows10) (ja3 hash:b20b44b18b853ef29ab773e921b03422)
-		return utls.ClientHelloSpec{
+		return &utls.ClientHelloSpec{
 			CipherSuites: []uint16{
 				utls.TLS_AES_128_GCM_SHA256,
 				utls.TLS_CHACHA20_POLY1305_SHA256,
@@ -262,7 +260,7 @@ func getHelloSpec(specName string) utls.ClientHelloSpec {
 			TLSVersMin: utls.VersionTLS10,
 		}
 	case IPHONEX: // iPhone X (ios:12.4) (ja3 hash:7a7a639628f0fe5c7e057628a5bbec5a) (tested apps:chrome/safari)
-		return utls.ClientHelloSpec{
+		return &utls.ClientHelloSpec{
 			CipherSuites: []uint16{
 				utls.TLS_CHACHA20_POLY1305_SHA256,
 				utls.TLS_AES_128_GCM_SHA256,
@@ -343,7 +341,7 @@ func getHelloSpec(specName string) utls.ClientHelloSpec {
 			TLSVersMin: utls.VersionTLS10,
 		}
 	case IPHONE11: // iPhone 11 (ios:13.3) (ja3 hash:6fa3244afc6bb6f9fad207b6b52af26b) (tested apps:chrome/safari)
-		return utls.ClientHelloSpec{
+		return &utls.ClientHelloSpec{
 			CipherSuites: []uint16{
 				utls.TLS_AES_128_GCM_SHA256,
 				utls.TLS_AES_256_GCM_SHA384,

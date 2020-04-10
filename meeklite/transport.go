@@ -30,13 +30,14 @@ type DialFunc func(string, string) (net.Conn, error)
 type roundTripper struct {
 	sync.Mutex
 
-	clientHelloSpec *utls.ClientHelloSpec
+	clientHelloSpec func(string) *utls.ClientHelloSpec
 	dialFn          DialFunc
 	transport       http.RoundTripper
 
 	initConn net.Conn
 
 	skipVerifyCerts bool
+	mimicBrowser    string
 }
 
 // RTClient stores and manages the roundTripper
@@ -58,6 +59,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 	//
 	// This also assumes that req.URL.Host will remain constant for the
 	// lifetime of the roundTripper, which is a valid assumption for meeklite.
+
 	if rt.transport == nil {
 		if err := rt.getTransport(req); err != nil {
 			return nil, err
@@ -141,7 +143,7 @@ func (rt *roundTripper) dialTLS(network, addr string) (net.Conn, error) {
 		DynamicRecordSizingDisabled: true,
 	}, utls.HelloCustom)
 
-	if err := conn.ApplyPreset(rt.clientHelloSpec); err != nil {
+	if err := conn.ApplyPreset(rt.clientHelloSpec(rt.mimicBrowser)); err != nil {
 		return nil, err
 	}
 	if err = conn.Handshake(); err != nil {
@@ -212,12 +214,13 @@ func getDialTLSAddr(u *url.URL) string {
 }
 
 // NewRTC creates a RTClient with a roundTripper
-func NewRTC(dialFn DialFunc, clientHelloSpec *utls.ClientHelloSpec, skipVerifyCerts bool) *RTClient {
+func NewRTC(dialFn DialFunc, getHelloSpec func(string) *utls.ClientHelloSpec, skipVerifyCerts bool, mimicBrowser string) *RTClient {
 	return &RTClient{
 		rt: roundTripper{
 			dialFn:          dialFn,
-			clientHelloSpec: clientHelloSpec,
+			clientHelloSpec: getHelloSpec,
 			skipVerifyCerts: skipVerifyCerts,
+			mimicBrowser:    mimicBrowser,
 		},
 	}
 }

@@ -471,6 +471,10 @@ func request(opts Options) (*Response, error) {
 
 	// Parse URL to get hostname
 	parsedURL, err := url.Parse(opts.URL)
+	if err != nil {
+		return &Response{ID: opts.ID, Error: err.Error()}, err
+	}
+
 	// Find client from history or create new one
 	client, err := getClient(parsedURL.Hostname(), opts.Proxy, opts.MimicBrowser)
 	if err != nil {
@@ -493,7 +497,11 @@ func request(opts Options) (*Response, error) {
 	}
 
 	// Build http.Request
-	req, _ := http.NewRequest(opts.Method, opts.URL, strings.NewReader(opts.Body))
+	req, err := http.NewRequest(opts.Method, opts.URL, strings.NewReader(opts.Body))
+	if err != nil {
+		return &Response{ID: opts.ID, Error: err.Error()}, err
+	}
+
 	if len(opts.HeaderOrder) > 0 {
 		for _, hName := range opts.HeaderOrder {
 			nameFixed := textproto.CanonicalMIMEHeaderKey(hName)

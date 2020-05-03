@@ -34,7 +34,10 @@ var (
 	clientMap       = map[string]*meeklite.RTClient{}
 )
 
+// Headers is a [string]string map of http header values
 type Headers map[string]string
+
+// HeaderOrder is a string array for the order of http headers
 type HeaderOrder []string
 
 // Options defines the options used to initiate a request
@@ -161,7 +164,7 @@ func getHelloSpec(specName string) *utls.ClientHelloSpec {
 				&utls.SCTExtension{},
 				&utls.KeyShareExtension{
 					KeyShares: []utls.KeyShare{
-						//{Group: utls.CurveID(utls.GREASE_PLACEHOLDER), Data: []byte{0}},
+						{Group: utls.CurveID(utls.GREASE_PLACEHOLDER), Data: []byte{0}},
 						{Group: utls.X25519},
 					}},
 				&utls.PSKKeyExchangeModesExtension{
@@ -202,8 +205,8 @@ func getHelloSpec(specName string) *utls.ClientHelloSpec {
 				utls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
 				utls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
 				utls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-				0x0033, //utls.TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
-				0x0039, //utls.TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
+				utls.FAKE_TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
+				utls.FAKE_TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
 				utls.TLS_RSA_WITH_AES_128_CBC_SHA,
 				utls.TLS_RSA_WITH_AES_256_CBC_SHA,
 				utls.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
@@ -229,10 +232,10 @@ func getHelloSpec(specName string) *utls.ClientHelloSpec {
 				&utls.KeyShareExtension{
 					KeyShares: []utls.KeyShare{
 						{Group: utls.X25519},
+						{Group: utls.CurveP256},
 					}},
 				&utls.SupportedVersionsExtension{
 					Versions: []uint16{
-						utls.GREASE_PLACEHOLDER,
 						utls.VersionTLS13,
 						utls.VersionTLS12,
 						utls.VersionTLS11,
@@ -240,20 +243,22 @@ func getHelloSpec(specName string) *utls.ClientHelloSpec {
 					}},
 				&utls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []utls.SignatureScheme{
 					utls.ECDSAWithP256AndSHA256,
-					utls.PSSWithSHA256,
-					utls.PKCS1WithSHA256,
 					utls.ECDSAWithP384AndSHA384,
+					utls.ECDSAWithP521AndSHA512,
+					utls.PSSWithSHA256,
 					utls.PSSWithSHA384,
-					utls.PKCS1WithSHA384,
 					utls.PSSWithSHA512,
+					utls.PKCS1WithSHA256,
+					utls.PKCS1WithSHA384,
 					utls.PKCS1WithSHA512,
+					utls.ECDSAWithSHA1,
 					utls.PKCS1WithSHA1,
 				}},
 				&utls.PSKKeyExchangeModesExtension{
 					Modes: []uint8{
 						utls.PskModeDHE,
 					}},
-				&utls.FakeRecordSizeLimitExtension{},
+				&utls.FakeRecordSizeLimitExtension{0x4001},
 				&utls.UtlsPaddingExtension{GetPaddingLen: utls.BoringPaddingStyle},
 			},
 			TLSVersMax: utls.VersionTLS13,
@@ -267,21 +272,21 @@ func getHelloSpec(specName string) *utls.ClientHelloSpec {
 				utls.TLS_AES_256_GCM_SHA384,
 				utls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
 				utls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-				0xC024, //utls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+				utls.DISABLED_TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
 				utls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
 				utls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
 				utls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
 				utls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
 				utls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 				utls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-				0xC028, //utls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
+				utls.DISABLED_TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
 				utls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
 				utls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
 				utls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
 				utls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
 				utls.TLS_RSA_WITH_AES_256_GCM_SHA384,
 				utls.TLS_RSA_WITH_AES_128_GCM_SHA256,
-				0x003D, //utls.TLS_RSA_WITH_AES_256_CBC_SHA256,
+				utls.DISABLED_TLS_RSA_WITH_AES_256_CBC_SHA256,
 				utls.TLS_RSA_WITH_AES_128_CBC_SHA256,
 				utls.TLS_RSA_WITH_AES_256_CBC_SHA,
 				utls.TLS_RSA_WITH_AES_128_CBC_SHA,
@@ -348,21 +353,21 @@ func getHelloSpec(specName string) *utls.ClientHelloSpec {
 				utls.TLS_CHACHA20_POLY1305_SHA256,
 				utls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
 				utls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-				0xC024, //utls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
+				utls.DISABLED_TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,
 				utls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256,
 				utls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
 				utls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
 				utls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
 				utls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
 				utls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-				0xC028, //utls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
+				utls.DISABLED_TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384,
 				utls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,
 				utls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
 				utls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
 				utls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
 				utls.TLS_RSA_WITH_AES_256_GCM_SHA384,
 				utls.TLS_RSA_WITH_AES_128_GCM_SHA256,
-				0x003D, //utls.TLS_RSA_WITH_AES_256_CBC_SHA256,
+				utls.DISABLED_TLS_RSA_WITH_AES_256_CBC_SHA256,
 				utls.TLS_RSA_WITH_AES_128_CBC_SHA256,
 				utls.TLS_RSA_WITH_AES_256_CBC_SHA,
 				utls.TLS_RSA_WITH_AES_128_CBC_SHA,

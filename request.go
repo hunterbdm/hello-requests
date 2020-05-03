@@ -258,11 +258,11 @@ func getHelloSpec(specName string) *utls.ClientHelloSpec {
 					Modes: []uint8{
 						utls.PskModeDHE,
 					}},
-				&utls.FakeRecordSizeLimitExtension{0x4001},
+				&utls.FakeRecordSizeLimitExtension{Limit: 0x4001},
 				&utls.UtlsPaddingExtension{GetPaddingLen: utls.BoringPaddingStyle},
 			},
-			TLSVersMax: utls.VersionTLS13,
-			TLSVersMin: utls.VersionTLS10,
+			// TLSVersMax: utls.VersionTLS13,
+			// TLSVersMin: utls.VersionTLS10,
 		}
 	case IPHONEX: // iPhone X (ios:12.4) (ja3 hash:7a7a639628f0fe5c7e057628a5bbec5a) (tested apps:chrome/safari)
 		return &utls.ClientHelloSpec{

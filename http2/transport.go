@@ -1464,12 +1464,22 @@ func (cc *ClientConn) encodeHeaders(req *http.Request, addGzipHeader bool, trail
 		if m == "" {
 			m = http.MethodGet
 		}
+		// f(":method", m)
+		// f(":authority", host)
+		// if req.Method != "CONNECT" {
+		// 	f(":scheme", req.URL.Scheme)
+		// 	f(":path", path)
+		// }
+
 		f(":method", m)
+		if req.Method != "CONNECT" {
+			f(":path", path)
+		}
 		f(":authority", host)
 		if req.Method != "CONNECT" {
 			f(":scheme", req.URL.Scheme)
-			f(":path", path)
 		}
+
 		if trailers != "" {
 			f("trailer", trailers)
 		}

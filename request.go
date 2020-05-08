@@ -63,7 +63,7 @@ type Response struct {
 	Time       int
 }
 
-func newClient(rawProxy, mimicBrowser string) (*meeklite.RTClient, error) {
+func newClient(rawProxy, mimicBrowser, host string) (*meeklite.RTClient, error) {
 	if mimicBrowser == "" {
 		mimicBrowser = CHROME
 	}
@@ -87,12 +87,12 @@ func newClient(rawProxy, mimicBrowser string) (*meeklite.RTClient, error) {
 		dialFn = dialer.Dial
 	}
 
-	rtc := meeklite.NewRTC(dialFn, getHelloSpec, skipVerifyCerts, mimicBrowser)
+	rtc := meeklite.NewRTC(dialFn, getHelloSpec, skipVerifyCerts, mimicBrowser, host)
 
 	return rtc, nil
 }
 
-func getClient(hostname, proxy, mimicBrowser string) (*meeklite.RTClient, error) {
+func getClient(hostname, proxy, mimicBrowser, hostHeader string) (*meeklite.RTClient, error) {
 	identifier := hostname + "_" + proxy + "_" + mimicBrowser
 	now := time.Now().UnixNano() / int64(time.Millisecond)
 
@@ -101,7 +101,7 @@ func getClient(hostname, proxy, mimicBrowser string) (*meeklite.RTClient, error)
 		return savedClient, nil
 	}
 
-	client, err := newClient(proxy, mimicBrowser)
+	client, err := newClient(proxy, mimicBrowser, hostHeader)
 	if err != nil {
 		return nil, err
 	}
@@ -480,12 +480,6 @@ func request(opts Options) (*Response, error) {
 		return &Response{ID: opts.ID, Error: err.Error()}, err
 	}
 
-	// Find client from history or create new one
-	client, err := getClient(parsedURL.Hostname(), opts.Proxy, opts.MimicBrowser)
-	if err != nil {
-		return &Response{ID: opts.ID, Error: err.Error()}, err
-	}
-
 	// Set cookie header
 	if opts.Jar != nil {
 		cookiesForRequest := opts.Jar.Cookies(parsedURL)
@@ -515,6 +509,17 @@ func request(opts Options) (*Response, error) {
 	}
 	for name, value := range opts.Headers {
 		req.Header.Set(name, value)
+	}
+
+	// Find client from history or create new one
+	hostHeader := req.Header.Get("Host")
+	client, err := getClient(parsedURL.Hostname(), opts.Proxy, opts.MimicBrowser, hostHeader)
+	if err != nil {
+		return &Response{ID: opts.ID, Error: err.Error()}, err
+	}
+
+	if len(hostHeader) > 0 {
+		req.Host = hostHeader
 	}
 
 	startTime := time.Now().UnixNano() / int64(time.Millisecond)

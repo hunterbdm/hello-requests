@@ -38,6 +38,7 @@ type roundTripper struct {
 
 	skipVerifyCerts bool
 	mimicBrowser    string
+	host            string
 }
 
 // RTClient stores and manages the roundTripper
@@ -111,7 +112,9 @@ func (rt *roundTripper) dialTLS(network, addr string) (net.Conn, error) {
 	}
 
 	var host string
-	if host, _, err = net.SplitHostPort(addr); err != nil {
+	if len(rt.host) > 0 {
+		host = rt.host
+	} else if host, _, err = net.SplitHostPort(addr); err != nil {
 		host = addr
 	}
 
@@ -214,13 +217,14 @@ func getDialTLSAddr(u *url.URL) string {
 }
 
 // NewRTC creates a RTClient with a roundTripper
-func NewRTC(dialFn DialFunc, getHelloSpec func(string) *utls.ClientHelloSpec, skipVerifyCerts bool, mimicBrowser string) *RTClient {
+func NewRTC(dialFn DialFunc, getHelloSpec func(string) *utls.ClientHelloSpec, skipVerifyCerts bool, mimicBrowser string, host string) *RTClient {
 	return &RTClient{
 		rt: roundTripper{
 			dialFn:          dialFn,
 			clientHelloSpec: getHelloSpec,
 			skipVerifyCerts: skipVerifyCerts,
 			mimicBrowser:    mimicBrowser,
+			host:            host,
 		},
 	}
 }

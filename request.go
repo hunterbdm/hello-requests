@@ -5,6 +5,7 @@ import (
 	"compress/gzip"
 	"errors"
 	"io/ioutil"
+	"sync"
 
 	"github.com/hunterbdm/hello-requests/http"
 	"github.com/hunterbdm/hello-requests/meeklite"
@@ -38,6 +39,7 @@ var (
 
 	skipVerifyCerts = false
 	clientMap       = map[string]*meeklite.RTClient{}
+	clientMapMutex  = sync.RWMutex{}
 )
 
 // Headers is a [string]string map of http header values
@@ -103,7 +105,10 @@ func getClient(hostname, proxy, mimicBrowser, hostHeader string) (*meeklite.RTCl
 	now := time.Now().UnixNano() / int64(time.Millisecond)
 
 	// Use previously stored client if found
-	if savedClient, ok := clientMap[identifier]; ok && now-savedClient.LastRequestTS < 34000 {
+	clientMapMutex.RLock()
+	savedClient, ok := clientMap[identifier]
+	clientMapMutex.RUnlock()
+	if ok && now-savedClient.LastRequestTS < 34000 {
 		return savedClient, nil
 	}
 
@@ -112,7 +117,10 @@ func getClient(hostname, proxy, mimicBrowser, hostHeader string) (*meeklite.RTCl
 		return nil, err
 	}
 	// Store client in map
+	clientMapMutex.Lock()
 	clientMap[identifier] = client
+	clientMapMutex.Unlock()
+
 	return client, nil
 }
 

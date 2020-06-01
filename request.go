@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"sync"
 
@@ -26,10 +27,8 @@ var (
 	CHROME = "Chrome"
 	// CHROMEH1 is the 'key' for the Google Chrome(< 83) clientHelloSpec using only http1
 	CHROMEH1 = "Chrome_HTTP1"
-
 	// CHROME83 is the 'key' for the Google Chrome(>= 83) clientHelloSpec
 	CHROME83 = "Chrome83"
-
 	// FIREFOX is the 'key' for the Firefox clientHelloSpec
 	FIREFOX = "Firefox"
 	// IPHONEX is the 'key' for the iPhone X clientHelloSpec
@@ -37,6 +36,7 @@ var (
 	// IPHONE11 is the 'key' for the iPhone 11 clientHelloSpec
 	IPHONE11 = "iPhone11"
 
+	debugLogging    = false
 	skipVerifyCerts = false
 	clientMap       = map[string]*meeklite.RTClient{}
 	clientMapMutex  = sync.RWMutex{}
@@ -631,7 +631,12 @@ func DisableCertChecks() {
 	skipVerifyCerts = true
 }
 
-// Request does the full process of managing a client and processing the http/https request
+// EnableDebugLogging turns on debug logging
+func EnableDebugLogging() {
+	debugLogging = true
+}
+
+// request does the full process of managing a client and processing the http/https request
 func request(opts Options) (*Response, error) {
 	// Validate request options
 	if opts.URL == "" {
@@ -690,7 +695,13 @@ func request(opts Options) (*Response, error) {
 	}
 
 	startTime := time.Now().UnixNano() / int64(time.Millisecond)
+	if debugLogging {
+		fmt.Println("Starting request: ", opts.ID)
+	}
 	resp, err := client.Do(req)
+	if debugLogging {
+		fmt.Println("Request finished: ", opts.ID)
+	}
 	endTime := time.Now().UnixNano() / int64(time.Millisecond)
 
 	if resp != nil {

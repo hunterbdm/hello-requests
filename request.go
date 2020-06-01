@@ -696,11 +696,11 @@ func request(opts Options) (*Response, error) {
 
 	startTime := time.Now().UnixNano() / int64(time.Millisecond)
 	if debugLogging {
-		fmt.Println("Starting request: ", opts.ID)
+		fmt.Println("[hello-requests] Starting request: ", opts.ID)
 	}
 	resp, err := client.Do(req)
 	if debugLogging {
-		fmt.Println("Request finished: ", opts.ID)
+		fmt.Println("[hello-requests] Request finished: ", opts.ID)
 	}
 	endTime := time.Now().UnixNano() / int64(time.Millisecond)
 

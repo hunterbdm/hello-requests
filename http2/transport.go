@@ -1464,24 +1464,27 @@ func (cc *ClientConn) encodeHeaders(req *http.Request, addGzipHeader bool, trail
 		if m == "" {
 			m = http.MethodGet
 		}
-		f(":method", m)
-		f(":authority", host)
-		if req.Method != "CONNECT" {
-			f(":scheme", req.URL.Scheme)
-			f(":path", path)
-		}
 
-		// f(":method", m)
-		// if req.Method != "CONNECT" {
-		// 	f(":path", path)
-		// }
-		// f(":authority", host)
-		// if req.Method != "CONNECT" {
-		// 	f(":scheme", req.URL.Scheme)
-		// }
+		if req.MimicBrowser == "Firefox" {
+			f(":method", m)
+			if req.Method != "CONNECT" {
+				f(":path", path)
+			}
+			f(":authority", host)
+			if req.Method != "CONNECT" {
+				f(":scheme", req.URL.Scheme)
+			}
 
-		if trailers != "" {
-			f("trailer", trailers)
+			if trailers != "" {
+				f("trailer", trailers)
+			}
+		} else {
+			f(":method", m)
+			f(":authority", host)
+			if req.Method != "CONNECT" {
+				f(":scheme", req.URL.Scheme)
+				f(":path", path)
+			}
 		}
 
 		var didUA bool

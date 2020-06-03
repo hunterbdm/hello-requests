@@ -39,6 +39,8 @@ type roundTripper struct {
 	skipVerifyCerts bool
 	mimicBrowser    string
 	host            string
+
+	timeout int
 }
 
 // RTClient stores and manages the roundTripper
@@ -72,7 +74,7 @@ func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
 func (rt *roundTripper) getTransport(req *http.Request) error {
 	switch strings.ToLower(req.URL.Scheme) {
 	case "http":
-		rt.transport = newHTTPTransport(rt.dialFn, nil)
+		rt.transport = newHTTPTransport(rt.dialFn, nil, rt.timeout)
 		return nil
 	case "https":
 	default:
@@ -172,12 +174,13 @@ func (rt *roundTripper) dialTLS(network, addr string) (net.Conn, error) {
 			IdleConnTimeout:       35 * time.Second,
 			TLSHandshakeTimeout:   10 * time.Second,
 			ExpectContinueTimeout: time.Second,
+			ResponseHeaderTimeout: time.Duration(rt.timeout) * time.Millisecond,
 		})
 
 		rt.transport = t2
 	default:
 		// Assume the remote peer is speaking HTTP 1.x + TLS.
-		rt.transport = newHTTPTransport(nil, rt.dialTLS)
+		rt.transport = newHTTPTransport(nil, rt.dialTLS, rt.timeout)
 	}
 
 	// Stash the connection just established for use servicing the
@@ -191,7 +194,7 @@ func (rt *roundTripper) dialTLSHTTP2(network, addr string, cfg *tls.Config) (net
 	return rt.dialTLS(network, addr)
 }
 
-func newHTTPTransport(dialFn, dialTLSFn DialFunc) *http.Transport {
+func newHTTPTransport(dialFn, dialTLSFn DialFunc, timeout int) *http.Transport {
 	base := (http.DefaultTransport).(*http.Transport)
 
 	return &http.Transport{
@@ -203,6 +206,7 @@ func newHTTPTransport(dialFn, dialTLSFn DialFunc) *http.Transport {
 		IdleConnTimeout:       35 * time.Second,
 		TLSHandshakeTimeout:   base.TLSHandshakeTimeout,
 		ExpectContinueTimeout: base.ExpectContinueTimeout,
+		ResponseHeaderTimeout: time.Duration(timeout) * time.Millisecond,
 	}
 }
 
@@ -217,7 +221,7 @@ func getDialTLSAddr(u *url.URL) string {
 }
 
 // NewRTC creates a RTClient with a roundTripper
-func NewRTC(dialFn DialFunc, getHelloSpec func(string) *utls.ClientHelloSpec, skipVerifyCerts bool, mimicBrowser string, host string) *RTClient {
+func NewRTC(dialFn DialFunc, getHelloSpec func(string) *utls.ClientHelloSpec, skipVerifyCerts bool, mimicBrowser string, host string, timeout int) *RTClient {
 	return &RTClient{
 		rt: roundTripper{
 			dialFn:          dialFn,
@@ -225,6 +229,7 @@ func NewRTC(dialFn DialFunc, getHelloSpec func(string) *utls.ClientHelloSpec, sk
 			skipVerifyCerts: skipVerifyCerts,
 			mimicBrowser:    mimicBrowser,
 			host:            host,
+			timeout:         timeout,
 		},
 	}
 }

@@ -59,6 +59,7 @@ type Options struct {
 	Proxy        string
 	MimicBrowser string
 	Jar          *cookiejar.Jar
+	Timeout      int
 }
 
 // Response defines the results of a request
@@ -71,7 +72,7 @@ type Response struct {
 	Time       int
 }
 
-func newClient(rawProxy, mimicBrowser, host string) (*meeklite.RTClient, error) {
+func newClient(rawProxy, mimicBrowser, host string, timeout int) (*meeklite.RTClient, error) {
 	if mimicBrowser == "" {
 		mimicBrowser = CHROME
 	}
@@ -95,12 +96,12 @@ func newClient(rawProxy, mimicBrowser, host string) (*meeklite.RTClient, error) 
 		dialFn = dialer.Dial
 	}
 
-	rtc := meeklite.NewRTC(dialFn, getHelloSpec, skipVerifyCerts, mimicBrowser, host)
+	rtc := meeklite.NewRTC(dialFn, getHelloSpec, skipVerifyCerts, mimicBrowser, host, timeout)
 
 	return rtc, nil
 }
 
-func getClient(hostname, proxy, mimicBrowser, hostHeader string) (*meeklite.RTClient, error) {
+func getClient(hostname, proxy, mimicBrowser, hostHeader string, timeout int) (*meeklite.RTClient, error) {
 	identifier := hostname + "_" + proxy + "_" + mimicBrowser
 	now := time.Now().UnixNano() / int64(time.Millisecond)
 
@@ -112,7 +113,7 @@ func getClient(hostname, proxy, mimicBrowser, hostHeader string) (*meeklite.RTCl
 		return savedClient, nil
 	}
 
-	client, err := newClient(proxy, mimicBrowser, hostHeader)
+	client, err := newClient(proxy, mimicBrowser, hostHeader, timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -685,13 +686,20 @@ func request(opts Options) (*Response, error) {
 
 	// Find client from history or create new one
 	hostHeader := req.Header.Get("Host")
-	client, err := getClient(parsedURL.Hostname(), opts.Proxy, opts.MimicBrowser, hostHeader)
+	client, err := getClient(parsedURL.Hostname(), opts.Proxy, opts.MimicBrowser, hostHeader, opts.Timeout)
 	if err != nil {
 		return &Response{ID: opts.ID, Error: err.Error()}, err
 	}
 
 	if len(hostHeader) > 0 {
 		req.Host = hostHeader
+	}
+
+	// Set MimicBrowser on the request object so it can be refrenced when settings http2 headers
+	if opts.MimicBrowser != "" {
+		req.MimicBrowser = opts.MimicBrowser
+	} else {
+		req.MimicBrowser = CHROME
 	}
 
 	startTime := time.Now().UnixNano() / int64(time.Millisecond)

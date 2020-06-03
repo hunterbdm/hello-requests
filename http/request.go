@@ -172,6 +172,8 @@ type Request struct {
 	Header      Header
 	HeaderOrder []string
 
+	MimicBrowser string
+
 	// Body is the request's body.
 	//
 	// For client requests, a nil body means the request has no

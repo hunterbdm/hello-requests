@@ -329,7 +329,7 @@ func getHelloSpec(specName string) *utls.ClientHelloSpec {
 					utls.PKCS1WithSHA384,
 					utls.PSSWithSHA512,
 					utls.PKCS1WithSHA512,
-					utls.PKCS1WithSHA1,
+					//utls.PKCS1WithSHA1,
 				}},
 				&utls.SCTExtension{},
 				&utls.KeyShareExtension{
@@ -405,7 +405,7 @@ func getHelloSpec(specName string) *utls.ClientHelloSpec {
 					utls.PKCS1WithSHA384,
 					utls.PSSWithSHA512,
 					utls.PKCS1WithSHA512,
-					utls.PKCS1WithSHA1,
+					//utls.PKCS1WithSHA1,
 				}},
 				&utls.SCTExtension{},
 				&utls.KeyShareExtension{

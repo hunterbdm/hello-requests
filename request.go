@@ -33,8 +33,6 @@ var (
 	CHROME83H1 = "Chrome83_HTTP1"
 	// FIREFOX is the 'key' for the Firefox clientHelloSpec
 	FIREFOX = "Firefox"
-	// FIREFOXH1 is the 'key' for the Firefox clientHelloSpec using only http1
-	FIREFOXH1 = "Firefox_HTTP1"
 	// IPHONEX is the 'key' for the iPhone X clientHelloSpec
 	IPHONEX = "iPhoneX"
 	// IPHONE11 is the 'key' for the iPhone 11 clientHelloSpec
@@ -476,81 +474,6 @@ func getHelloSpec(specName string) *utls.ClientHelloSpec {
 				&utls.SupportedPointsExtension{SupportedPoints: []byte{0x00}},
 				&utls.SessionTicketExtension{},
 				&utls.ALPNExtension{AlpnProtocols: []string{"h2", "http/1.1"}},
-				&utls.StatusRequestExtension{},
-				&utls.KeyShareExtension{
-					KeyShares: []utls.KeyShare{
-						{Group: utls.X25519},
-						{Group: utls.CurveP256},
-					}},
-				&utls.SupportedVersionsExtension{
-					Versions: []uint16{
-						utls.VersionTLS13,
-						utls.VersionTLS12,
-						utls.VersionTLS11,
-						utls.VersionTLS10,
-					}},
-				&utls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []utls.SignatureScheme{
-					utls.ECDSAWithP256AndSHA256,
-					utls.ECDSAWithP384AndSHA384,
-					utls.ECDSAWithP521AndSHA512,
-					utls.PSSWithSHA256,
-					utls.PSSWithSHA384,
-					utls.PSSWithSHA512,
-					utls.PKCS1WithSHA256,
-					utls.PKCS1WithSHA384,
-					utls.PKCS1WithSHA512,
-					utls.ECDSAWithSHA1,
-					utls.PKCS1WithSHA1,
-				}},
-				&utls.PSKKeyExchangeModesExtension{
-					Modes: []uint8{
-						utls.PskModeDHE,
-					}},
-				&utls.FakeRecordSizeLimitExtension{Limit: 0x4001},
-				&utls.UtlsPaddingExtension{GetPaddingLen: utls.BoringPaddingStyle},
-			},
-			// TLSVersMax: utls.VersionTLS13,
-			// TLSVersMin: utls.VersionTLS10,
-		}
-	case FIREFOXH1: // Firefox (version:74.0) (os:windows10) (ja3 hash:b20b44b18b853ef29ab773e921b03422)
-		return &utls.ClientHelloSpec{
-			CipherSuites: []uint16{
-				utls.TLS_AES_128_GCM_SHA256,
-				utls.TLS_CHACHA20_POLY1305_SHA256,
-				utls.TLS_AES_256_GCM_SHA384,
-				utls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-				utls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-				utls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
-				utls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
-				utls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-				utls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-				utls.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
-				utls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
-				utls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-				utls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-				utls.FAKE_TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
-				utls.FAKE_TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
-				utls.TLS_RSA_WITH_AES_128_CBC_SHA,
-				utls.TLS_RSA_WITH_AES_256_CBC_SHA,
-				utls.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
-			},
-			CompressionMethods: []byte{0x00},
-			Extensions: []utls.TLSExtension{
-				&utls.SNIExtension{},
-				&utls.UtlsExtendedMasterSecretExtension{},
-				&utls.RenegotiationInfoExtension{Renegotiation: utls.RenegotiateOnceAsClient},
-				&utls.SupportedCurvesExtension{
-					Curves: []utls.CurveID{
-						utls.X25519,
-						utls.CurveP256,
-						utls.CurveP384,
-						utls.CurveP521,
-						utls.CurveID(256),
-						utls.CurveID(257),
-					}},
-				&utls.SupportedPointsExtension{SupportedPoints: []byte{0x00}},
-				&utls.SessionTicketExtension{},
-				&utls.ALPNExtension{AlpnProtocols: []string{"http/1.1"}},
 				&utls.StatusRequestExtension{},
 				&utls.KeyShareExtension{
 					KeyShares: []utls.KeyShare{

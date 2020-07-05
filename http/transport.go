@@ -17,6 +17,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	utls "github.com/refraction-networking/utls"
 	"io"
 	"log"
 	"net"
@@ -237,7 +238,7 @@ type Transport struct {
 	// must return a RoundTripper that then handles the request.
 	// If TLSNextProto is not nil, HTTP/2 support is not enabled
 	// automatically.
-	TLSNextProto map[string]func(authority string, c *tls.Conn) RoundTripper
+	TLSNextProto map[string]func(authority string, c *utls.UConn) RoundTripper
 
 	// ProxyConnectHeader optionally specifies headers to send to
 	// proxies during CONNECT requests.
@@ -272,6 +273,10 @@ type Transport struct {
 	// To use a custom dialer or TLS config and still attempt HTTP/2
 	// upgrades, set this to true.
 	ForceAttemptHTTP2 bool
+
+	// Custom code starts here
+	MimicBrowser string
+	GetHelloSpec func(string) *utls.ClientHelloSpec
 }
 
 func (t *Transport) writeBufferSize() int {
@@ -316,7 +321,7 @@ func (t *Transport) Clone() *Transport {
 		t2.TLSClientConfig = t.TLSClientConfig.Clone()
 	}
 	if !t.tlsNextProtoWasNil {
-		npm := map[string]func(authority string, c *tls.Conn) RoundTripper{}
+		npm := map[string]func(authority string, c *utls.UConn) RoundTripper{}
 		for k, v := range t.TLSNextProto {
 			npm[k] = v
 		}
@@ -1439,7 +1444,44 @@ func (pconn *persistConn) addTLS(name string, trace *httptrace.ClientTrace) erro
 		cfg.NextProtos = nil
 	}
 	plainConn := pconn.conn
-	tlsConn := tls.Client(plainConn, cfg)
+
+	//tlsConn := tls.Client(plainConn, cfg)
+
+	// Custom code starts here
+	utlsCfg := utls.Config{
+		Rand:                        cfg.Rand,
+		Time:                        cfg.Time,
+		//Certificates:                cfg.Certificates,
+		//NameToCertificate:           cfg.NameToCertificate,
+		//GetCertificate:              cfg.GetCertificate,
+		//GetClientCertificate:        cfg.GetClientCertificate,
+		//GetConfigForClient:          cfg.GetConfigForClient,
+		VerifyPeerCertificate:       cfg.VerifyPeerCertificate,
+		RootCAs:                     cfg.RootCAs,
+		NextProtos:                  cfg.NextProtos,
+		ServerName:                  cfg.ServerName,
+		//ClientAuth:                  cfg.ClientAuth,
+		ClientCAs:                   cfg.ClientCAs,
+		InsecureSkipVerify:          cfg.InsecureSkipVerify,
+		CipherSuites:                cfg.CipherSuites,
+		PreferServerCipherSuites:    cfg.PreferServerCipherSuites,
+		SessionTicketsDisabled:      cfg.SessionTicketsDisabled,
+		SessionTicketKey:            cfg.SessionTicketKey,
+		//ClientSessionCache:          cfg.ClientSessionCache
+		MinVersion:                  cfg.MinVersion,
+		MaxVersion:                  cfg.MaxVersion,
+		//CurvePreferences:            cfg.CurvePreferences,
+		DynamicRecordSizingDisabled: cfg.DynamicRecordSizingDisabled,
+		//Renegotiation:               cfg.Renegotiation,
+		KeyLogWriter:                cfg.KeyLogWriter,
+	}
+	tlsConn := utls.UClient(plainConn, &utlsCfg, utls.HelloCustom)
+	tlsConn.ApplyPreset(pconn.t.GetHelloSpec(pconn.t.MimicBrowser))
+
+	//fmt.Println(pconn.t.MimicBrowser)
+	// Custom code ends here
+
+
 	errc := make(chan error, 2)
 	var timer *time.Timer // for canceling TLS handshake
 	if d := pconn.t.TLSHandshakeTimeout; d != 0 {
@@ -1464,7 +1506,27 @@ func (pconn *persistConn) addTLS(name string, trace *httptrace.ClientTrace) erro
 		}
 		return err
 	}
-	cs := tlsConn.ConnectionState()
+
+
+	//cs := tlsConn.ConnectionState()
+	// Custom code starts here
+	ucs := tlsConn.ConnectionState()
+	cs := tls.ConnectionState{
+		Version:                     ucs.Version,
+		HandshakeComplete:           ucs.HandshakeComplete,
+		DidResume:                   ucs.DidResume,
+		CipherSuite:                 ucs.CipherSuite,
+		NegotiatedProtocol:          ucs.NegotiatedProtocol,
+		NegotiatedProtocolIsMutual:  ucs.NegotiatedProtocolIsMutual,
+		ServerName:                  ucs.ServerName,
+		PeerCertificates:            ucs.PeerCertificates,
+		VerifiedChains:              ucs.VerifiedChains,
+		SignedCertificateTimestamps: ucs.SignedCertificateTimestamps,
+		OCSPResponse:                ucs.OCSPResponse,
+		TLSUnique:                   ucs.TLSUnique,
+	}
+	// Custom code ends here
+
 	if trace != nil && trace.TLSHandshakeDone != nil {
 		trace.TLSHandshakeDone(cs, nil)
 	}
@@ -1638,7 +1700,7 @@ func (t *Transport) dialConn(ctx context.Context, cm connectMethod) (pconn *pers
 
 	if s := pconn.tlsState; s != nil && s.NegotiatedProtocolIsMutual && s.NegotiatedProtocol != "" {
 		if next, ok := t.TLSNextProto[s.NegotiatedProtocol]; ok {
-			return &persistConn{t: t, cacheKey: pconn.cacheKey, alt: next(cm.targetAddr, pconn.conn.(*tls.Conn))}, nil
+			return &persistConn{t: t, cacheKey: pconn.cacheKey, alt: next(cm.targetAddr, pconn.conn.(*utls.UConn))}, nil
 		}
 	}
 

@@ -1465,6 +1465,7 @@ func (cc *ClientConn) encodeHeaders(req *http.Request, addGzipHeader bool, trail
 			m = http.MethodGet
 		}
 
+		/* Edited code starts here */
 		if req.MimicBrowser == "Firefox" {
 			f(":method", m)
 			if req.Method != "CONNECT" {
@@ -1486,6 +1487,7 @@ func (cc *ClientConn) encodeHeaders(req *http.Request, addGzipHeader bool, trail
 				f(":path", path)
 			}
 		}
+		/* Edited code ends here */
 
 		var didUA bool
 		var didContentLength bool

@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"strconv"
 	"sync"
 
 	"github.com/hunterbdm/hello-requests/http"
-	"github.com/hunterbdm/hello-requests/meeklite"
 
 	"net/textproto"
 	"net/url"
@@ -19,7 +19,6 @@ import (
 	"github.com/hunterbdm/hello-requests/http/cookiejar"
 
 	utls "github.com/refraction-networking/utls"
-	"golang.org/x/net/proxy"
 )
 
 var (
@@ -40,7 +39,7 @@ var (
 
 	debugLogging    = false
 	skipVerifyCerts = false
-	clientMap       = map[string]*meeklite.RTClient{}
+	clientMap       = map[string]*http.Client{}
 	clientMapMutex  = sync.RWMutex{}
 )
 
@@ -62,6 +61,7 @@ type Options struct {
 	MimicBrowser string
 	Jar          *cookiejar.Jar
 	Timeout      int
+	FollowRedirects bool
 }
 
 // Response defines the results of a request
@@ -74,12 +74,12 @@ type Response struct {
 	Time       int
 }
 
-func newClient(rawProxy, mimicBrowser, host string, timeout int) (*meeklite.RTClient, error) {
+func newClient(rawProxy, mimicBrowser string, timeout int, followRedirects bool) (*http.Client, error) {
 	if mimicBrowser == "" {
 		mimicBrowser = CHROME
 	}
 
-	dialFn := proxy.Direct.Dial
+	var tp http.Transport
 	if rawProxy != "" {
 		proxySplit := strings.Split(rawProxy, ":")
 		var proxyURI *url.URL
@@ -91,31 +91,53 @@ func newClient(rawProxy, mimicBrowser, host string, timeout int) (*meeklite.RTCl
 			proxyURI, err = url.Parse("http://" + proxySplit[2] + ":" + proxySplit[3] + "@" + proxySplit[0] + ":" + proxySplit[1])
 		}
 
-		dialer, err := proxy.FromURL(proxyURI, proxy.Direct)
 		if err != nil {
 			return nil, err
 		}
-		dialFn = dialer.Dial
+
+		tp = http.Transport{
+			Proxy: http.ProxyURL(proxyURI),
+			MimicBrowser: mimicBrowser,
+			GetHelloSpec: getHelloSpec,
+			IdleConnTimeout: 5 * time.Second,
+		}
+	} else {
+		tp = http.Transport{
+			MimicBrowser: mimicBrowser,
+			GetHelloSpec: getHelloSpec,
+			IdleConnTimeout: 5 * time.Second,
+		}
 	}
 
-	rtc := meeklite.NewRTC(dialFn, getHelloSpec, skipVerifyCerts, mimicBrowser, host, timeout)
+	client := http.Client{
+		Timeout:       time.Duration(timeout) * time.Millisecond,
+		Transport: &tp,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
 
-	return rtc, nil
+	if !followRedirects {
+		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		}
+	}
+
+	return &client, nil
 }
 
-func getClient(hostname, proxy, mimicBrowser, hostHeader string, timeout int) (*meeklite.RTClient, error) {
-	identifier := hostname + "_" + proxy + "_" + mimicBrowser
-	now := time.Now().UnixNano() / int64(time.Millisecond)
+func getClient(proxy, mimicBrowser string, timeout int, followRedirects bool) (*http.Client, error) {
+	identifier := proxy + "_" + mimicBrowser + "_" + strconv.Itoa(timeout) + "_" + strconv.FormatBool(followRedirects)
 
 	// Use previously stored client if found
 	clientMapMutex.RLock()
 	savedClient, ok := clientMap[identifier]
 	clientMapMutex.RUnlock()
-	if ok && now-savedClient.LastRequestTS < 34000 {
+	if ok {
 		return savedClient, nil
 	}
 
-	client, err := newClient(proxy, mimicBrowser, hostHeader, timeout)
+	client, err := newClient(proxy, mimicBrowser, timeout, followRedirects)
 	if err != nil {
 		return nil, err
 	}
@@ -435,7 +457,7 @@ func getHelloSpec(specName string) *utls.ClientHelloSpec {
 			TLSVersMax: utls.VersionTLS13,
 			TLSVersMin: utls.VersionTLS10,
 		}
-	case FIREFOX: // Firefox (version:74.0) (os:windows10) (ja3 hash:b20b44b18b853ef29ab773e921b03422)
+	case FIREFOX: // Firefox (version:74.0) (os:windows10) (ja3 hash:aa7744226c695c0b2e440419848cf700)
 		return &utls.ClientHelloSpec{
 			CipherSuites: []uint16{
 				utls.TLS_AES_128_GCM_SHA256,
@@ -451,8 +473,8 @@ func getHelloSpec(specName string) *utls.ClientHelloSpec {
 				utls.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
 				utls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
 				utls.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-				utls.FAKE_TLS_DHE_RSA_WITH_AES_128_CBC_SHA,
-				utls.FAKE_TLS_DHE_RSA_WITH_AES_256_CBC_SHA,
+				utls.TLS_RSA_WITH_AES_128_GCM_SHA256,
+				utls.TLS_RSA_WITH_AES_256_GCM_SHA384,
 				utls.TLS_RSA_WITH_AES_128_CBC_SHA,
 				utls.TLS_RSA_WITH_AES_256_CBC_SHA,
 				utls.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
@@ -484,8 +506,6 @@ func getHelloSpec(specName string) *utls.ClientHelloSpec {
 					Versions: []uint16{
 						utls.VersionTLS13,
 						utls.VersionTLS12,
-						utls.VersionTLS11,
-						utls.VersionTLS10,
 					}},
 				&utls.SignatureAlgorithmsExtension{SupportedSignatureAlgorithms: []utls.SignatureScheme{
 					utls.ECDSAWithP256AndSHA256,
@@ -724,6 +744,9 @@ func request(opts Options) (*Response, error) {
 	if opts.Method == "" {
 		opts.Method = "GET"
 	}
+	if opts.Timeout == 0 {
+		opts.Timeout = 60000
+	}
 
 	// Parse URL to get hostname
 	parsedURL, err := url.Parse(opts.URL)
@@ -764,7 +787,8 @@ func request(opts Options) (*Response, error) {
 
 	// Find client from history or create new one
 	hostHeader := req.Header.Get("Host")
-	client, err := getClient(parsedURL.Hostname(), opts.Proxy, opts.MimicBrowser, hostHeader, opts.Timeout)
+	client, err := getClient(opts.Proxy, opts.MimicBrowser, opts.Timeout, opts.FollowRedirects)
+
 	if err != nil {
 		return &Response{ID: opts.ID, Error: err.Error()}, err
 	}
@@ -773,7 +797,7 @@ func request(opts Options) (*Response, error) {
 		req.Host = hostHeader
 	}
 
-	// Set MimicBrowser on the request object so it can be refrenced when settings http2 headers
+	// Set MimicBrowser on the request object so it can be referenced when settings http2 headers
 	if opts.MimicBrowser != "" {
 		req.MimicBrowser = opts.MimicBrowser
 	} else {

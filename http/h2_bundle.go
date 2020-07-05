@@ -49,6 +49,7 @@ import (
 	"github.com/hunterbdm/hello-requests/http/httptrace"
 
 	"github.com/hunterbdm/hello-requests/http2/hpack"
+	utls "github.com/refraction-networking/utls"
 
 	"golang.org/x/net/http/httpguts"
 	"golang.org/x/net/idna"
@@ -828,7 +829,7 @@ func (c *http2dialCall) dial(addr string) {
 // This code decides which ones live or die.
 // The return value used is whether c was used.
 // c is never closed.
-func (p *http2clientConnPool) addConnIfNeeded(key string, t *http2Transport, c *tls.Conn) (used bool, err error) {
+func (p *http2clientConnPool) addConnIfNeeded(key string, t *http2Transport, c *utls.UConn) (used bool, err error) {
 	p.mu.Lock()
 	for _, cc := range p.conns[key] {
 		if cc.CanTakeNewRequest() {
@@ -863,7 +864,7 @@ type http2addConnCall struct {
 	err  error
 }
 
-func (c *http2addConnCall) run(t *http2Transport, key string, tc *tls.Conn) {
+func (c *http2addConnCall) run(t *http2Transport, key string, tc *utls.UConn) {
 	cc, err := t.NewClientConn(tc)
 
 	p := c.p
@@ -6658,7 +6659,7 @@ func http2configureTransport(t1 *Transport) (*http2Transport, error) {
 	if !http2strSliceContains(t1.TLSClientConfig.NextProtos, "http/1.1") {
 		t1.TLSClientConfig.NextProtos = append(t1.TLSClientConfig.NextProtos, "http/1.1")
 	}
-	upgradeFn := func(authority string, c *tls.Conn) RoundTripper {
+	upgradeFn := func(authority string, c *utls.UConn) RoundTripper {
 		addr := http2authorityAddr("https", authority)
 		if used, err := connPool.addConnIfNeeded(addr, t2, c); err != nil {
 			go c.Close()
@@ -6673,7 +6674,7 @@ func http2configureTransport(t1 *Transport) (*http2Transport, error) {
 		return t2
 	}
 	if m := t1.TLSNextProto; len(m) == 0 {
-		t1.TLSNextProto = map[string]func(string, *tls.Conn) RoundTripper{
+		t1.TLSNextProto = map[string]func(string, *utls.UConn) RoundTripper{
 			"h2": upgradeFn,
 		}
 	} else {
@@ -7952,26 +7953,52 @@ func (cc *http2ClientConn) encodeHeaders(req *Request, addGzipHeader bool, trail
 		// target URI (the path-absolute production and optionally a '?' character
 		// followed by the query production (see Sections 3.3 and 3.4 of
 		// [RFC3986]).
-		f(":authority", host)
+
+		//f(":authority", host)
 		m := req.Method
 		if m == "" {
 			m = MethodGet
 		}
-		f(":method", m)
-		if req.Method != "CONNECT" {
-			f(":path", path)
-			f(":scheme", req.URL.Scheme)
-		}
-		if trailers != "" {
-			f("trailer", trailers)
+		//f(":method", m)
+		//if req.Method != "CONNECT" {
+		//	f(":path", path)
+		//	f(":scheme", req.URL.Scheme)
+		//}
+		//if trailers != "" {
+		//	f("trailer", trailers)
+		//}
+
+		if req.MimicBrowser == "Firefox" {
+			f(":method", m)
+			if req.Method != "CONNECT" {
+				f(":path", path)
+			}
+			f(":authority", host)
+			if req.Method != "CONNECT" {
+				f(":scheme", req.URL.Scheme)
+			}
+
+			if trailers != "" {
+				f("trailer", trailers)
+			}
+		} else {
+			f(":method", m)
+			f(":authority", host)
+			if req.Method != "CONNECT" {
+				f(":scheme", req.URL.Scheme)
+				f(":path", path)
+			}
 		}
 
 		var didUA bool
-		for k, vv := range req.Header {
-			if strings.EqualFold(k, "host") || strings.EqualFold(k, "content-length") {
+		var didContentLength bool
+
+		/* Edited code starts here */
+		processHeader := func(k string, vv []string) {
+			if strings.EqualFold(k, "host") {
 				// Host is :authority, already sent.
 				// Content-Length is automatic, set below.
-				continue
+				return
 			} else if strings.EqualFold(k, "connection") || strings.EqualFold(k, "proxy-connection") ||
 				strings.EqualFold(k, "transfer-encoding") || strings.EqualFold(k, "upgrade") ||
 				strings.EqualFold(k, "keep-alive") {
@@ -7979,7 +8006,7 @@ func (cc *http2ClientConn) encodeHeaders(req *Request, addGzipHeader bool, trail
 				// Fields, don't send connection-specific
 				// fields. We have already checked if any
 				// are error-worthy so just ignore the rest.
-				continue
+				return
 			} else if strings.EqualFold(k, "user-agent") {
 				// Match Go's http1 behavior: at most one
 				// User-Agent. If set to nil or empty string,
@@ -7987,11 +8014,11 @@ func (cc *http2ClientConn) encodeHeaders(req *Request, addGzipHeader bool, trail
 				// include the default (below).
 				didUA = true
 				if len(vv) < 1 {
-					continue
+					return
 				}
 				vv = vv[:1]
 				if vv[0] == "" {
-					continue
+					return
 				}
 			} else if strings.EqualFold(k, "cookie") {
 				// Per 8.1.2.5 To allow for better compression efficiency, the
@@ -8015,16 +8042,52 @@ func (cc *http2ClientConn) encodeHeaders(req *Request, addGzipHeader bool, trail
 						f("cookie", v)
 					}
 				}
-				continue
+				return
+			} else if strings.EqualFold(k, "content-length") {
+				didContentLength = true
 			}
 
 			for _, v := range vv {
 				f(k, v)
 			}
 		}
-		if http2shouldSendReqContentLength(req.Method, contentLength) {
+
+		if req.HeaderOrder != nil && len(req.HeaderOrder) > 0 {
+			// Add ordered headers first
+			for _, hName := range req.HeaderOrder {
+				if hValues, ok := req.Header[hName]; ok {
+					processHeader(hName, hValues)
+				}
+			}
+
+			// Add headers not listed in req.HeaderOrder
+			for k, vv := range req.Header {
+				skip := false
+				for _, hName := range req.HeaderOrder {
+					if hName == k {
+						skip = true
+						break
+					}
+				}
+				if skip {
+					continue
+				}
+
+				processHeader(k, vv)
+			}
+
+		} else {
+			for k, vv := range req.Header {
+				processHeader(k, vv)
+			}
+		}
+
+		if http2shouldSendReqContentLength(req.Method, contentLength) && !didContentLength {
 			f("content-length", strconv.FormatInt(contentLength, 10))
 		}
+
+		/* Edited code ends here */
+
 		if addGzipHeader {
 			f("accept-encoding", "gzip")
 		}

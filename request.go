@@ -62,6 +62,7 @@ type Options struct {
 	Jar          *cookiejar.Jar
 	Timeout      int
 	FollowRedirects bool
+	FollowHostRedirects bool
 }
 
 // Response defines the results of a request
@@ -72,9 +73,10 @@ type Response struct {
 	Headers    map[string][]string
 	Body       string
 	Time       int
+	Request    *Options
 }
 
-func newClient(rawProxy, mimicBrowser string, timeout int, followRedirects bool) (*http.Client, error) {
+func newClient(rawProxy, mimicBrowser string, timeout int, followRedirects bool, followHostRedirects bool) (*http.Client, error) {
 	if mimicBrowser == "" {
 		mimicBrowser = CHROME
 	}
@@ -112,12 +114,19 @@ func newClient(rawProxy, mimicBrowser string, timeout int, followRedirects bool)
 	client := http.Client{
 		Timeout:       time.Duration(timeout) * time.Millisecond,
 		Transport: &tp,
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
 	}
 
-	if !followRedirects {
+	if !followRedirects && followHostRedirects {
+		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			lastRequest := via[len(via) - 1]
+
+			if req.URL.Path == lastRequest.URL.Path {
+				return nil
+			}
+
+			return http.ErrUseLastResponse
+		}
+	} else if !followRedirects {
 		client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 			return http.ErrUseLastResponse
 		}
@@ -126,7 +135,7 @@ func newClient(rawProxy, mimicBrowser string, timeout int, followRedirects bool)
 	return &client, nil
 }
 
-func getClient(proxy, mimicBrowser string, timeout int, followRedirects bool) (*http.Client, error) {
+func getClient(proxy, mimicBrowser string, timeout int, followRedirects bool, followHostRedirects bool) (*http.Client, error) {
 	identifier := proxy + "_" + mimicBrowser + "_" + strconv.Itoa(timeout) + "_" + strconv.FormatBool(followRedirects)
 
 	// Use previously stored client if found
@@ -137,7 +146,7 @@ func getClient(proxy, mimicBrowser string, timeout int, followRedirects bool) (*
 		return savedClient, nil
 	}
 
-	client, err := newClient(proxy, mimicBrowser, timeout, followRedirects)
+	client, err := newClient(proxy, mimicBrowser, timeout, followRedirects, followHostRedirects)
 	if err != nil {
 		return nil, err
 	}
@@ -787,10 +796,10 @@ func request(opts Options) (*Response, error) {
 
 	// Find client from history or create new one
 	hostHeader := req.Header.Get("Host")
-	client, err := getClient(opts.Proxy, opts.MimicBrowser, opts.Timeout, opts.FollowRedirects)
+	client, err := getClient(opts.Proxy, opts.MimicBrowser, opts.Timeout, opts.FollowRedirects, opts.FollowHostRedirects)
 
 	if err != nil {
-		return &Response{ID: opts.ID, Error: err.Error()}, err
+		return &Response{ID: opts.ID, Error: err.Error(), Request: &opts}, err
 	}
 
 	if len(hostHeader) > 0 {
@@ -818,13 +827,13 @@ func request(opts Options) (*Response, error) {
 		defer resp.Body.Close()
 	}
 	if err != nil {
-		return &Response{ID: opts.ID, Error: err.Error()}, err
+		return &Response{ID: opts.ID, Error: err.Error(), Request: &opts}, err
 	}
 
 	var body string
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return &Response{ID: opts.ID, Error: err.Error()}, err
+		return &Response{ID: opts.ID, Error: err.Error(), Request: &opts}, err
 	}
 	// Decompress body if needed
 	if vals, ok := resp.Header["Content-Encoding"]; ok {
@@ -838,11 +847,14 @@ func request(opts Options) (*Response, error) {
 		opts.Jar.SetCookies(parsedURL, http.ReadSetCookies(resp.Header))
 	}
 
+	opts.URL = resp.Request.URL.String()
+
 	return &Response{
 		ID:         opts.ID,
 		Body:       body,
 		StatusCode: resp.StatusCode,
 		Headers:    resp.Header,
 		Time:       int(endTime - startTime),
+		Request: &opts,
 	}, nil
 }

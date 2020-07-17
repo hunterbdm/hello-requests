@@ -827,6 +827,10 @@ func request(opts Options) (*Response, error) {
 		defer resp.Body.Close()
 	}
 	if err != nil {
+		if strings.Contains(err.Error(), "context deadline exceeded") {
+			err = errors.New("connection timed out")
+		}
+
 		return &Response{ID: opts.ID, Error: err.Error(), Request: &opts}, err
 	}
 

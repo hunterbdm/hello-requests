@@ -22,6 +22,8 @@ import (
 )
 
 var (
+	// GOLANG is the 'key' for the default Golang clientHelloSpec
+	GOLANG = "Golang"
 	// CHROME is the 'key' for the Google Chrome(< 83) clientHelloSpec
 	CHROME = "Chrome"
 	// CHROMEH1 is the 'key' for the Google Chrome(< 83) clientHelloSpec using only http1

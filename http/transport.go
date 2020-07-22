@@ -1475,8 +1475,14 @@ func (pconn *persistConn) addTLS(name string, trace *httptrace.ClientTrace) erro
 		//Renegotiation:               cfg.Renegotiation,
 		KeyLogWriter:                cfg.KeyLogWriter,
 	}
-	tlsConn := utls.UClient(plainConn, &utlsCfg, utls.HelloCustom)
-	tlsConn.ApplyPreset(pconn.t.GetHelloSpec(pconn.t.MimicBrowser))
+
+	var tlsConn *utls.UConn
+	if pconn.t.MimicBrowser == "Golang" {
+		tlsConn = utls.UClient(plainConn, &utlsCfg, utls.HelloGolang)
+	} else {
+		tlsConn = utls.UClient(plainConn, &utlsCfg, utls.HelloCustom)
+		tlsConn.ApplyPreset(pconn.t.GetHelloSpec(pconn.t.MimicBrowser))
+	}
 
 	//fmt.Println(pconn.t.MimicBrowser)
 	// Custom code ends here

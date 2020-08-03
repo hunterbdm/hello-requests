@@ -18,7 +18,7 @@ import (
 
 	"github.com/hunterbdm/hello-requests/http/cookiejar"
 
-	utls "github.com/refraction-networking/utls"
+	utls "github.com/hunterbdm/hello-requests/utls"
 )
 
 var (
@@ -229,8 +229,8 @@ func getHelloSpec(specName string) *utls.ClientHelloSpec {
 						utls.VersionTLS11,
 						utls.VersionTLS10,
 					}},
-				&utls.FakeCertCompressionAlgsExtension{
-					Methods: []utls.CertCompressionAlgo{
+				&utls.CompressCertificateExtension{
+					[]utls.CertCompressionAlgo{
 						utls.CertCompressionBrotli,
 					}},
 				&utls.UtlsGREASEExtension{},
@@ -306,8 +306,8 @@ func getHelloSpec(specName string) *utls.ClientHelloSpec {
 						utls.VersionTLS11,
 						utls.VersionTLS10,
 					}},
-				&utls.FakeCertCompressionAlgsExtension{
-					Methods: []utls.CertCompressionAlgo{
+				&utls.CompressCertificateExtension{
+					[]utls.CertCompressionAlgo{
 						utls.CertCompressionBrotli,
 					}},
 				&utls.UtlsGREASEExtension{},
@@ -382,8 +382,8 @@ func getHelloSpec(specName string) *utls.ClientHelloSpec {
 						utls.VersionTLS11,
 						utls.VersionTLS10,
 					}},
-				&utls.FakeCertCompressionAlgsExtension{
-					Methods: []utls.CertCompressionAlgo{
+				&utls.CompressCertificateExtension{
+					[]utls.CertCompressionAlgo{
 						utls.CertCompressionBrotli,
 					}},
 				&utls.UtlsGREASEExtension{},
@@ -458,8 +458,8 @@ func getHelloSpec(specName string) *utls.ClientHelloSpec {
 						utls.VersionTLS11,
 						utls.VersionTLS10,
 					}},
-				&utls.FakeCertCompressionAlgsExtension{
-					Methods: []utls.CertCompressionAlgo{
+				&utls.CompressCertificateExtension{
+					[]utls.CertCompressionAlgo{
 						utls.CertCompressionBrotli,
 					}},
 				&utls.UtlsGREASEExtension{},

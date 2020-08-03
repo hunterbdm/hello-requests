@@ -49,7 +49,7 @@ import (
 	"github.com/hunterbdm/hello-requests/http/httptrace"
 
 	"github.com/hunterbdm/hello-requests/http2/hpack"
-	utls "github.com/refraction-networking/utls"
+	utls "github.com/hunterbdm/hello-requests/utls"
 
 	"golang.org/x/net/http/httpguts"
 	"golang.org/x/net/idna"

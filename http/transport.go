@@ -17,7 +17,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	utls "github.com/refraction-networking/utls"
+	utls "github.com/hunterbdm/hello-requests/utls"
 	"io"
 	"log"
 	"net"

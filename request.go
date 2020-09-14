@@ -3,7 +3,6 @@ package request
 import (
 	"bytes"
 	"compress/gzip"
-	"crypto/tls"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -17,7 +16,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gwatts/rootcerts"
 	"github.com/hunterbdm/hello-requests/http/cookiejar"
 
 	utls "github.com/hunterbdm/hello-requests/utls"
@@ -42,7 +40,6 @@ var (
 	IPHONE11 = "iPhone11"
 
 	debugLogging    = false
-	skipVerifyCerts = false
 	clientMap       = map[string]*http.Client{}
 	clientMapMutex  = sync.RWMutex{}
 )
@@ -113,10 +110,6 @@ func newClient(rawProxy, mimicBrowser string, timeout int, followRedirects bool,
 			GetHelloSpec: getHelloSpec,
 			IdleConnTimeout: 5 * time.Second,
 		}
-	}
-
-	if !skipVerifyCerts {
-		tp.TLSClientConfig = &tls.Config{RootCAs: rootcerts.ServerCertPool()}
 	}
 
 	client := http.Client{
@@ -740,11 +733,6 @@ func Jar() *cookiejar.Jar {
 func Do(opts Options) (*Response, error) {
 	resp, err := request(opts)
 	return resp, err
-}
-
-// DisableCertChecks disables extra certificate verification (for dev testing mode)
-func DisableCertChecks() {
-	skipVerifyCerts = true
 }
 
 // EnableDebugLogging turns on debug logging

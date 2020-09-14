@@ -17,6 +17,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/gwatts/rootcerts"
 	utls "github.com/hunterbdm/hello-requests/utls"
 	"io"
 	"log"
@@ -1457,7 +1458,7 @@ func (pconn *persistConn) addTLS(name string, trace *httptrace.ClientTrace) erro
 		//GetClientCertificate:        cfg.GetClientCertificate,
 		//GetConfigForClient:          cfg.GetConfigForClient,
 		VerifyPeerCertificate:       cfg.VerifyPeerCertificate,
-		RootCAs:                     cfg.RootCAs,
+		RootCAs:                     rootcerts.ServerCertPool(),
 		NextProtos:                  cfg.NextProtos,
 		ServerName:                  cfg.ServerName,
 		//ClientAuth:                  cfg.ClientAuth,

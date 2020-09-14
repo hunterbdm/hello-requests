@@ -3,6 +3,7 @@ package request
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -16,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gwatts/rootcerts"
 	"github.com/hunterbdm/hello-requests/http/cookiejar"
 
 	utls "github.com/hunterbdm/hello-requests/utls"
@@ -111,6 +113,10 @@ func newClient(rawProxy, mimicBrowser string, timeout int, followRedirects bool,
 			GetHelloSpec: getHelloSpec,
 			IdleConnTimeout: 5 * time.Second,
 		}
+	}
+
+	if !skipVerifyCerts {
+		tp.TLSClientConfig = &tls.Config{RootCAs: rootcerts.ServerCertPool()}
 	}
 
 	client := http.Client{
@@ -230,7 +236,7 @@ func getHelloSpec(specName string) *utls.ClientHelloSpec {
 						utls.VersionTLS10,
 					}},
 				&utls.CompressCertificateExtension{
-					[]utls.CertCompressionAlgo{
+					Algorithms: []utls.CertCompressionAlgo{
 						utls.CertCompressionBrotli,
 					}},
 				&utls.UtlsGREASEExtension{},
@@ -307,7 +313,7 @@ func getHelloSpec(specName string) *utls.ClientHelloSpec {
 						utls.VersionTLS10,
 					}},
 				&utls.CompressCertificateExtension{
-					[]utls.CertCompressionAlgo{
+					Algorithms: []utls.CertCompressionAlgo{
 						utls.CertCompressionBrotli,
 					}},
 				&utls.UtlsGREASEExtension{},
@@ -383,7 +389,7 @@ func getHelloSpec(specName string) *utls.ClientHelloSpec {
 						utls.VersionTLS10,
 					}},
 				&utls.CompressCertificateExtension{
-					[]utls.CertCompressionAlgo{
+					Algorithms: []utls.CertCompressionAlgo{
 						utls.CertCompressionBrotli,
 					}},
 				&utls.UtlsGREASEExtension{},
@@ -459,7 +465,7 @@ func getHelloSpec(specName string) *utls.ClientHelloSpec {
 						utls.VersionTLS10,
 					}},
 				&utls.CompressCertificateExtension{
-					[]utls.CertCompressionAlgo{
+					Algorithms: []utls.CertCompressionAlgo{
 						utls.CertCompressionBrotli,
 					}},
 				&utls.UtlsGREASEExtension{},

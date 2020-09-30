@@ -22,21 +22,21 @@ import (
 )
 
 var (
-	// GOLANG is the 'key' for the default Golang clientHelloSpec
+	// GOLANG is the 'tag' for the default Golang clientHelloSpec
 	GOLANG = "Golang"
-	// CHROME is the 'key' for the Google Chrome(< 83) clientHelloSpec
+	// CHROME is the 'tag' for the Google Chrome(< 83) clientHelloSpec
 	CHROME = "Chrome"
-	// CHROMEH1 is the 'key' for the Google Chrome(< 83) clientHelloSpec using only http1
+	// CHROMEH1 is the 'tag' for the Google Chrome(< 83) clientHelloSpec using only http1
 	CHROMEH1 = "Chrome_HTTP1"
-	// CHROME83 is the 'key' for the Google Chrome(>= 83) clientHelloSpec
+	// CHROME83 is the 'tag' for the Google Chrome(>= 83) clientHelloSpec
 	CHROME83 = "Chrome83"
-	// CHROME83H1 is the 'key' for the Google Chrome(>= 83) clientHelloSpec using only http1
+	// CHROME83H1 is the 'tag' for the Google Chrome(>= 83) clientHelloSpec using only http1
 	CHROME83H1 = "Chrome83_HTTP1"
-	// FIREFOX is the 'key' for the Firefox clientHelloSpec
+	// FIREFOX is the 'tag' for the Firefox clientHelloSpec
 	FIREFOX = "Firefox"
-	// IPHONEX is the 'key' for the iPhone X clientHelloSpec
+	// IPHONEX is the 'tag' for the iPhone X clientHelloSpec
 	IPHONEX = "iPhoneX"
-	// IPHONE11 is the 'key' for the iPhone 11 clientHelloSpec
+	// IPHONE11 is the 'tag' for the iPhone 11 clientHelloSpec
 	IPHONE11 = "iPhone11"
 
 	debugLogging    = false

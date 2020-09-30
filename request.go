@@ -40,6 +40,7 @@ var (
 	IPHONE11 = "iPhone11"
 
 	debugLogging    = false
+	disableCertChecks = false
 	clientMap       = map[string]*http.Client{}
 	clientMapMutex  = sync.RWMutex{}
 )
@@ -103,12 +104,14 @@ func newClient(rawProxy, mimicBrowser string, timeout int, followRedirects bool,
 			MimicBrowser: mimicBrowser,
 			GetHelloSpec: getHelloSpec,
 			IdleConnTimeout: 5 * time.Second,
+			SkipCertChecks: disableCertChecks,
 		}
 	} else {
 		tp = http.Transport{
 			MimicBrowser: mimicBrowser,
 			GetHelloSpec: getHelloSpec,
 			IdleConnTimeout: 5 * time.Second,
+			SkipCertChecks: disableCertChecks,
 		}
 	}
 
@@ -738,6 +741,10 @@ func Do(opts Options) (*Response, error) {
 // EnableDebugLogging turns on debug logging
 func EnableDebugLogging() {
 	debugLogging = true
+}
+
+func DisableCertChecks() {
+	disableCertChecks = true
 }
 
 // request does the full process of managing a client and processing the http/https request

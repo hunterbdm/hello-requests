@@ -278,6 +278,7 @@ type Transport struct {
 	// Custom code starts here
 	MimicBrowser string
 	GetHelloSpec func(string) *utls.ClientHelloSpec
+	SkipCertChecks bool
 }
 
 func (t *Transport) writeBufferSize() int {
@@ -1458,7 +1459,7 @@ func (pconn *persistConn) addTLS(name string, trace *httptrace.ClientTrace) erro
 		//GetClientCertificate:        cfg.GetClientCertificate,
 		//GetConfigForClient:          cfg.GetConfigForClient,
 		VerifyPeerCertificate:       cfg.VerifyPeerCertificate,
-		RootCAs:                     rootcerts.ServerCertPool(),
+		//RootCAs:                     rootcerts.ServerCertPool(),
 		NextProtos:                  cfg.NextProtos,
 		ServerName:                  cfg.ServerName,
 		//ClientAuth:                  cfg.ClientAuth,
@@ -1477,12 +1478,19 @@ func (pconn *persistConn) addTLS(name string, trace *httptrace.ClientTrace) erro
 		KeyLogWriter:                cfg.KeyLogWriter,
 	}
 
+	if pconn.t.SkipCertChecks != true {
+		utlsCfg.RootCAs = rootcerts.ServerCertPool()
+	}
+
 	var tlsConn *utls.UConn
 	if pconn.t.MimicBrowser == "Golang" {
 		tlsConn = utls.UClient(plainConn, &utlsCfg, utls.HelloGolang)
 	} else {
 		tlsConn = utls.UClient(plainConn, &utlsCfg, utls.HelloCustom)
-		tlsConn.ApplyPreset(pconn.t.GetHelloSpec(pconn.t.MimicBrowser))
+		err := tlsConn.ApplyPreset(pconn.t.GetHelloSpec(pconn.t.MimicBrowser))
+		if err != nil {
+			return err
+		}
 	}
 
 	//fmt.Println(pconn.t.MimicBrowser)

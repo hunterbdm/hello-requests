@@ -106,19 +106,19 @@ func md5SHA1Hash(slices [][]byte) []byte {
 // hashForServerKeyExchange hashes the given slices and returns their digest
 // using the given hash function (for >= TLS 1.2) or using a default based on
 // the sigType (for earlier TLS versions).
-func hashForServerKeyExchange(sigType uint8, hashFunc crypto.Hash, version uint16, slices ...[]byte) []byte {
+func hashForServerKeyExchange(sigType uint8, hashFunc crypto.Hash, version uint16, slices ...[]byte) ([]byte, error) {
 	if version >= VersionTLS12 {
 		h := hashFunc.New()
 		for _, slice := range slices {
 			h.Write(slice)
 		}
 		digest := h.Sum(nil)
-		return digest
+		return digest, nil
 	}
 	if sigType == signatureECDSA {
-		return sha1Hash(slices)
+		return sha1Hash(slices), nil
 	}
-	return md5SHA1Hash(slices)
+	return md5SHA1Hash(slices), nil
 }
 
 // ecdheKeyAgreement implements a TLS key agreement where the server
@@ -185,7 +185,10 @@ NextCandidate:
 		return nil, errors.New("tls: certificate cannot be used with the selected cipher suite")
 	}
 
-	digest := hashForServerKeyExchange(sigType, hashFunc, ka.version, clientHello.random, hello.random, serverECDHParams)
+	digest, err := hashForServerKeyExchange(sigType, hashFunc, ka.version, clientHello.random, hello.random, serverECDHParams)
+	if err != nil {
+		return nil, err
+	}
 
 	signOpts := crypto.SignerOpts(hashFunc)
 	if sigType == signatureRSAPSS {
@@ -294,7 +297,10 @@ func (ka *ecdheKeyAgreement) processServerKeyExchange(config *Config, clientHell
 	}
 	sig = sig[2:]
 
-	digest := hashForServerKeyExchange(sigType, hashFunc, ka.version, clientHello.random, serverHello.random, serverECDHParams)
+	digest, err := hashForServerKeyExchange(sigType, hashFunc, ka.version, clientHello.random, serverHello.random, serverECDHParams)
+	if err != nil {
+		return err
+	}
 	return verifyHandshakeSignature(sigType, cert.PublicKey, hashFunc, digest, sig)
 }
 

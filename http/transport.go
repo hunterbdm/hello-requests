@@ -56,6 +56,8 @@ var DefaultTransport RoundTripper = &Transport{
 	ExpectContinueTimeout: 1 * time.Second,
 }
 
+var DefaultSessionCache utls.ClientSessionCache = utls.NewLRUClientSessionCache(32)
+
 // DefaultMaxIdleConnsPerHost is the default value of Transport's
 // MaxIdleConnsPerHost.
 const DefaultMaxIdleConnsPerHost = 2
@@ -279,6 +281,7 @@ type Transport struct {
 	MimicBrowser string
 	GetHelloSpec func(string) *utls.ClientHelloSpec
 	SkipCertChecks bool
+	ClientSessionCache utls.ClientSessionCache
 }
 
 func (t *Transport) writeBufferSize() int {
@@ -1467,7 +1470,6 @@ func (pconn *persistConn) addTLS(name string, trace *httptrace.ClientTrace) erro
 		InsecureSkipVerify:          cfg.InsecureSkipVerify,
 		CipherSuites:                cfg.CipherSuites,
 		PreferServerCipherSuites:    cfg.PreferServerCipherSuites,
-		SessionTicketsDisabled:      cfg.SessionTicketsDisabled,
 		SessionTicketKey:            cfg.SessionTicketKey,
 		//ClientSessionCache:          cfg.ClientSessionCache
 		MinVersion:                  cfg.MinVersion,
@@ -1476,6 +1478,12 @@ func (pconn *persistConn) addTLS(name string, trace *httptrace.ClientTrace) erro
 		DynamicRecordSizingDisabled: cfg.DynamicRecordSizingDisabled,
 		//Renegotiation:               cfg.Renegotiation,
 		KeyLogWriter:                cfg.KeyLogWriter,
+		ClientSessionCache:     pconn.t.ClientSessionCache,
+		SessionTicketsDisabled: false,
+	}
+
+	if !strings.Contains(pconn.t.MimicBrowser, "_PSK") {
+		utlsCfg.SessionTicketsDisabled = true
 	}
 
 	if pconn.t.SkipCertChecks != true {

@@ -15,6 +15,8 @@ import (
 	"net"
 	"strconv"
 	"sync/atomic"
+
+	"golang.org/x/crypto/cryptobyte"
 )
 
 type UConn struct {
@@ -86,6 +88,13 @@ func (uconn *UConn) BuildHandshakeState() error {
 		if err != nil {
 			return err
 		}
+
+		// Early load session so that PSK keys can be marshalled in this function
+		// and included in the hello.raw
+		hello := uconn.HandshakeState.Hello.getPrivatePtr()
+		uconn.loadSession(hello)
+		uconn.HandshakeState.Hello = hello.getPublicPtr()
+
 		err = uconn.MarshalClientHello()
 		if err != nil {
 			return err
@@ -187,7 +196,6 @@ func (c *UConn) Handshake() error {
 			return err
 		}
 		// [uTLS section ends]
-
 		c.handshakeErr = c.clientHandshake()
 	} else {
 		c.handshakeErr = c.serverHandshake()
@@ -326,7 +334,7 @@ func (c *UConn) clientHandshake() (err error) {
 		}()
 	}
 
-	if !sessionIsAlreadySet { // uTLS: do not overwrite already set session
+	if !sessionIsAlreadySet || !c.config.SessionTicketsDisabled { // uTLS: do not overwrite already set session
 		err = c.SetSessionState(session)
 		if err != nil {
 			return
@@ -357,7 +365,7 @@ func (c *UConn) clientHandshake() (err error) {
 		hs13 := c.HandshakeState.toPrivate13()
 		hs13.serverHello = serverHello
 		hs13.hello = hello
-		if !sessionIsAlreadySet {
+		if !sessionIsAlreadySet || !c.config.SessionTicketsDisabled {
 			hs13.earlySecret = earlySecret
 			hs13.binderKey = binderKey
 		}
@@ -399,12 +407,18 @@ func (uconn *UConn) ApplyConfig() error {
 }
 
 func (uconn *UConn) MarshalClientHello() error {
+	var pskBytes = []byte{}
+	var extensionsLen = 0
 	hello := uconn.HandshakeState.Hello
 	headerLength := 2 + 32 + 1 + len(hello.SessionId) +
 		2 + len(hello.CipherSuites)*2 +
 		1 + len(hello.CompressionMethods)
 
-	extensionsLen := 0
+	if len(hello.PskIdentities) > 0 && !uconn.config.SessionTicketsDisabled {
+		pskBytes = marshalPSK(hello)
+		extensionsLen += len(pskBytes)
+	}
+
 	var paddingExt *UtlsPaddingExtension
 	for _, ext := range uconn.Extensions {
 		if pe, ok := ext.(*UtlsPaddingExtension); !ok {
@@ -421,9 +435,12 @@ func (uconn *UConn) MarshalClientHello() error {
 	}
 
 	if paddingExt != nil {
-		// determine padding extension presence and length
-		paddingExt.Update(headerLength + 4 + extensionsLen + 2)
-		extensionsLen += paddingExt.Len()
+		// If using PSK don't use padding extension
+		if len(hello.PskIdentities) == 0 || uconn.config.SessionTicketsDisabled {
+			// determine padding extension presence and length
+			paddingExt.Update(headerLength + 4 + extensionsLen + 2)
+			extensionsLen += paddingExt.Len()
+		}
 	}
 
 	helloLen := headerLength
@@ -457,8 +474,18 @@ func (uconn *UConn) MarshalClientHello() error {
 	if len(uconn.Extensions) > 0 {
 		binary.Write(bufferedWriter, binary.BigEndian, uint16(extensionsLen))
 		for _, ext := range uconn.Extensions {
+			if _, ok := ext.(*UtlsPaddingExtension); ok {
+				continue
+			}
 			bufferedWriter.ReadFrom(ext)
 		}
+	}
+
+	if len(hello.PskIdentities) > 0 && !uconn.config.SessionTicketsDisabled { // pre_shared_key must be the last extension
+		// fmt.Printf("PSK Extension: %s\n", hex.EncodeToString(pskBytes))
+		binary.Write(bufferedWriter, binary.LittleEndian, pskBytes)
+	} else if paddingExt != nil { // If no PSK use padding extension.
+		bufferedWriter.ReadFrom(paddingExt)
 	}
 
 	err := bufferedWriter.Flush()
@@ -473,6 +500,31 @@ func (uconn *UConn) MarshalClientHello() error {
 
 	hello.Raw = helloBuffer.Bytes()
 	return nil
+}
+
+func marshalPSK(hello *ClientHelloMsg) []byte {
+	var b cryptobyte.Builder
+	// RFC 8446, Section 4.2.11
+	b.AddUint16(extensionPreSharedKey)
+	b.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
+		b.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
+			for _, psk := range hello.PskIdentities {
+				b.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
+					b.AddBytes(psk.label)
+				})
+				b.AddUint32(psk.obfuscatedTicketAge)
+			}
+		})
+		b.AddUint16LengthPrefixed(func(b *cryptobyte.Builder) {
+			for _, binder := range hello.PskBinders {
+				b.AddUint8LengthPrefixed(func(b *cryptobyte.Builder) {
+					b.AddBytes(binder)
+				})
+			}
+		})
+	})
+
+	return b.BytesOrPanic()
 }
 
 // get current state of cipher and encrypt zeros to get keystream

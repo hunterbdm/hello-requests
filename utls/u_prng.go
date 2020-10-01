@@ -39,8 +39,10 @@ func NewPRNGSeed() (*PRNGSeed, error) {
 	return seed, nil
 }
 
-// prng is a seeded, unbiased PRNG based on SHAKE256. that is suitable for use
-// cases such as obfuscation. Seeding is based on crypto/rand.Read.
+// prng is a seeded, unbiased PRNG based on SHAKE256 that is suitable for use
+// cases such as obfuscation.
+//
+// Seeding is based on crypto/rand.Read.
 //
 // This PRNG is _not_ for security use cases including production cryptographic
 // key generation.
@@ -50,9 +52,10 @@ func NewPRNGSeed() (*PRNGSeed, error) {
 // PRNG conforms to io.Reader and math/rand.Source, with additional helper
 // functions.
 type prng struct {
-	rand              *rand.Rand
-	randomStreamMutex sync.Mutex
-	randomStream      sha3.ShakeHash
+	sync.Mutex
+
+	r    io.Reader
+	rand *rand.Rand
 }
 
 // newPRNG generates a seed and creates a PRNG with that seed.
@@ -61,34 +64,28 @@ func newPRNG() (*prng, error) {
 	if err != nil {
 		return nil, err
 	}
-	return newPRNGWithSeed(seed)
+	return newPRNGWithSeed(seed), nil
 }
 
 // newPRNGWithSeed initializes a new PRNG using an existing seed.
-func newPRNGWithSeed(seed *PRNGSeed) (*prng, error) {
-	shake := sha3.NewShake256()
-	_, err := shake.Write(seed[:])
-	if err != nil {
-		return nil, err
-	}
+func newPRNGWithSeed(seed *PRNGSeed) *prng {
+	h := sha3.NewShake256()
+	_, _ = h.Write(seed[:])
+
 	p := &prng{
-		randomStream: shake,
+		r: h,
 	}
 	p.rand = rand.New(p)
-	return p, nil
+	return p
 }
 
 // Read reads random bytes from the PRNG stream into b. Read conforms to
 // io.Reader and always returns len(p), nil.
 func (p *prng) Read(b []byte) (int, error) {
-	p.randomStreamMutex.Lock()
-	defer p.randomStreamMutex.Unlock()
+	p.Lock()
+	defer p.Unlock()
 
-	// ShakeHash.Read never returns an error:
-	// https://godoc.org/golang.org/x/crypto/sha3#ShakeHash
-	_, _ = io.ReadFull(p.randomStream, b)
-
-	return len(b), nil
+	return io.ReadFull(p.r, b)
 }
 
 // Int63 is equivilent to math/read.Int63.

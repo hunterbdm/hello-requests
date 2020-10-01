@@ -87,6 +87,7 @@ func (c *Conn) makeClientHello() (*clientHelloMsg, map[CurveID]ecdheParameters, 
 	possibleCipherSuites := config.cipherSuites()
 	hello.cipherSuites = make([]uint16, 0, len(possibleCipherSuites))
 
+NextCipherSuite:
 	for _, suiteId := range possibleCipherSuites {
 		for _, suite := range cipherSuites {
 			if suite.id != suiteId {
@@ -95,10 +96,10 @@ func (c *Conn) makeClientHello() (*clientHelloMsg, map[CurveID]ecdheParameters, 
 			// Don't advertise TLS 1.2-only cipher suites unless
 			// we're attempting TLS 1.2.
 			if hello.vers < VersionTLS12 && suite.flags&suiteTLS12 != 0 {
-				break
+				continue
 			}
 			hello.cipherSuites = append(hello.cipherSuites, suiteId)
-			break
+			continue NextCipherSuite
 		}
 	}
 
@@ -138,6 +139,10 @@ func paramsForCurves(rng io.Reader, curves []CurveID) ([]keyShare, map[CurveID]e
 		keyShares []keyShare
 	)
 	for _, curveID := range curves {
+		if curveID&GREASE_PLACEHOLDER == GREASE_PLACEHOLDER {
+			//Ignore GREASE as a curve or face the wrath of x25519
+			continue
+		}
 		if _, ok := curveForCurveID(curveID); curveID != X25519 && !ok {
 			return nil, nil, errors.New("tls: CurvePreferences includes unsupported curve")
 		}
@@ -852,7 +857,11 @@ func (c *Conn) verifyServerCertificate(certificates [][]byte) error {
 			DNSName:       c.config.ServerName,
 			Intermediates: x509.NewCertPool(),
 		}
-		for _, cert := range certs[1:] {
+
+		for i, cert := range certs {
+			if i == 0 {
+				continue
+			}
 			opts.Intermediates.AddCert(cert)
 		}
 		var err error
@@ -955,7 +964,7 @@ func (c *Conn) getClientCertificate(cri *CertificateRequestInfo) (*Certificate, 
 	// Issuer is in AcceptableCAs.
 	for i, chain := range c.config.Certificates {
 		sigOK := false
-		for _, alg := range signatureSchemesForCertificate(c.vers, &chain) {
+		for _, alg := range signatureSchemesForCertificate(&chain) {
 			if isSupportedSignatureAlgorithm(alg, cri.SignatureSchemes) {
 				sigOK = true
 				break

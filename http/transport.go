@@ -1488,6 +1488,8 @@ func (pconn *persistConn) addTLS(name string, trace *httptrace.ClientTrace) erro
 
 	if pconn.t.SkipCertChecks != true {
 		utlsCfg.RootCAs = rootcerts.ServerCertPool()
+	} else {
+		utlsCfg.InsecureSkipVerify = true
 	}
 
 	var tlsConn *utls.UConn

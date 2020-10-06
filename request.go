@@ -37,10 +37,10 @@ var (
 	// IPHONE11 is the 'tag' for the iPhone 11 clientHelloSpec
 	IPHONE11 = "iPhone11"
 
-	debugLogging    = false
-	disableCertChecks = false
-	clientMap       = map[string]*http.Client{}
-	clientMapMutex  = sync.RWMutex{}
+	debugLogging         = false
+	globalSkipCertChecks = false
+	clientMap            = map[string]*http.Client{}
+	clientMapMutex       = sync.RWMutex{}
 )
 
 // Headers is a [string]string map of http header values
@@ -76,7 +76,7 @@ type Response struct {
 	Request    *Options
 }
 
-func newClient(rawProxy, mimicBrowser string, timeout int, followRedirects bool, followHostRedirects bool) (*http.Client, error) {
+func newClient(rawProxy, mimicBrowser string, timeout int, followRedirects bool, followHostRedirects bool, skipCertChecks bool) (*http.Client, error) {
 	if mimicBrowser == "" {
 		mimicBrowser = CHROME
 	}
@@ -98,19 +98,19 @@ func newClient(rawProxy, mimicBrowser string, timeout int, followRedirects bool,
 		}
 
 		tp = http.Transport{
-			Proxy: http.ProxyURL(proxyURI),
-			MimicBrowser: mimicBrowser,
-			GetHelloSpec: getHelloSpec,
-			IdleConnTimeout: 5 * time.Second,
-			SkipCertChecks: disableCertChecks,
+			Proxy:              http.ProxyURL(proxyURI),
+			MimicBrowser:       mimicBrowser,
+			GetHelloSpec:       getHelloSpec,
+			IdleConnTimeout:    5 * time.Second,
+			SkipCertChecks:     skipCertChecks,
 			ClientSessionCache: utls.NewLRUClientSessionCache(32),
 		}
 	} else {
 		tp = http.Transport{
-			MimicBrowser: mimicBrowser,
-			GetHelloSpec: getHelloSpec,
-			IdleConnTimeout: 5 * time.Second,
-			SkipCertChecks: disableCertChecks,
+			MimicBrowser:       mimicBrowser,
+			GetHelloSpec:       getHelloSpec,
+			IdleConnTimeout:    5 * time.Second,
+			SkipCertChecks:     skipCertChecks,
 			ClientSessionCache: utls.NewLRUClientSessionCache(32),
 		}
 	}
@@ -139,8 +139,8 @@ func newClient(rawProxy, mimicBrowser string, timeout int, followRedirects bool,
 	return &client, nil
 }
 
-func getClient(proxy, mimicBrowser string, timeout int, followRedirects bool, followHostRedirects bool) (*http.Client, error) {
-	identifier := proxy + "_" + mimicBrowser + "_" + strconv.Itoa(timeout) + "_" + strconv.FormatBool(followRedirects)
+func getClient(proxy, mimicBrowser string, timeout int, followRedirects bool, followHostRedirects bool, skipCertChecks bool) (*http.Client, error) {
+	identifier := proxy + "_" + mimicBrowser + "_" + strconv.Itoa(timeout) + "_" + strconv.FormatBool(followRedirects) + "_" + strconv.FormatBool(followHostRedirects) + "_" + strconv.FormatBool(skipCertChecks)
 
 	// Use previously stored client if found
 	clientMapMutex.RLock()
@@ -150,7 +150,7 @@ func getClient(proxy, mimicBrowser string, timeout int, followRedirects bool, fo
 		return savedClient, nil
 	}
 
-	client, err := newClient(proxy, mimicBrowser, timeout, followRedirects, followHostRedirects)
+	client, err := newClient(proxy, mimicBrowser, timeout, followRedirects, followHostRedirects, skipCertChecks)
 	if err != nil {
 		return nil, err
 	}
@@ -593,7 +593,7 @@ func EnableDebugLogging() {
 }
 
 func DisableCertChecks() {
-	disableCertChecks = true
+	globalSkipCertChecks = true
 }
 
 // request does the full process of managing a client and processing the http/https request
@@ -648,7 +648,11 @@ func request(opts Options) (*Response, error) {
 
 	// Find client from history or create new one
 	hostHeader := req.Header.Get("Host")
-	client, err := getClient(opts.Proxy, opts.MimicBrowser, opts.Timeout, opts.FollowRedirects, opts.FollowHostRedirects)
+	skipCertChecks := false
+	if globalSkipCertChecks || (len(hostHeader) > 0 && !strings.Contains(opts.URL, hostHeader)) {
+		skipCertChecks = true
+	}
+	client, err := getClient(opts.Proxy, opts.MimicBrowser, opts.Timeout, opts.FollowRedirects, opts.FollowHostRedirects, skipCertChecks)
 
 	if err != nil {
 		return &Response{ID: opts.ID, Error: err.Error(), Request: &opts}, err

@@ -3140,7 +3140,7 @@ const (
 	http2NextProtoTLS = "h2"
 
 	// http://http2.github.io/http2-spec/#SettingValues
-	http2initialHeaderTableSize = 4096
+	http2initialHeaderTableSize = 65536
 
 	http2initialWindowSize = 65535 // 6.9.2 Initial Flow Control Window Size
 
@@ -6546,7 +6546,9 @@ const (
 	// transportDefaultStreamFlow is how many stream-level flow
 	// control tokens we announce to the peer, and how many bytes
 	// we buffer per stream.
-	http2transportDefaultStreamFlow = 4 << 20
+	//http2transportDefaultStreamFlow = 4 << 20
+	http2transportDefaultStreamFlow = 6 << 20
+	// This is SETTINGS_INITIAL_WINDOW_SIZE
 
 	// transportDefaultStreamMinRefresh is the minimum number of bytes we'll send
 	// a stream-level WINDOW_UPDATE for at a time.
@@ -6645,6 +6647,7 @@ func http2configureTransport(t1 *Transport) (*http2Transport, error) {
 	t2 := &http2Transport{
 		ConnPool: http2noDialClientConnPool{connPool},
 		t1:       t1,
+		MaxHeaderListSize: 262144,
 	}
 	connPool.t = t2
 	if err := http2registerHTTPSProtocol(t1, http2noDialH2RoundTripper{t2}); err != nil {
@@ -7160,6 +7163,8 @@ func (t *http2Transport) newClientConn(c net.Conn, singleUse bool) (*http2Client
 	initialSettings := []http2Setting{
 		{ID: http2SettingEnablePush, Val: 0},
 		{ID: http2SettingInitialWindowSize, Val: http2transportDefaultStreamFlow},
+		{ID: http2SettingMaxConcurrentStreams, Val: 1000},
+		{ID: http2SettingHeaderTableSize, Val: http2initialHeaderTableSize},
 	}
 	if max := t.maxHeaderListSize(); max != 0 {
 		initialSettings = append(initialSettings, http2Setting{ID: http2SettingMaxHeaderListSize, Val: max})

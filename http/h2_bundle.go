@@ -6541,7 +6541,9 @@ func http2h1ServerKeepAlivesDisabled(hs *Server) bool {
 const (
 	// transportDefaultConnFlow is how many connection-level flow control
 	// tokens we give the server at start-up, past the default 64k.
-	http2transportDefaultConnFlow = 1 << 30
+	//http2transportDefaultConnFlow = 1 << 30
+	http2transportDefaultConnFlow = 15663105
+	// This is for the WINDOW_UPDATE frame
 
 	// transportDefaultStreamFlow is how many stream-level flow
 	// control tokens we announce to the peer, and how many bytes
@@ -6647,7 +6649,6 @@ func http2configureTransport(t1 *Transport) (*http2Transport, error) {
 	t2 := &http2Transport{
 		ConnPool: http2noDialClientConnPool{connPool},
 		t1:       t1,
-		MaxHeaderListSize: 262144,
 	}
 	connPool.t = t2
 	if err := http2registerHTTPSProtocol(t1, http2noDialH2RoundTripper{t2}); err != nil {
@@ -7161,14 +7162,15 @@ func (t *http2Transport) newClientConn(c net.Conn, singleUse bool) (*http2Client
 	}
 
 	initialSettings := []http2Setting{
-		{ID: http2SettingEnablePush, Val: 0},
-		{ID: http2SettingInitialWindowSize, Val: http2transportDefaultStreamFlow},
-		{ID: http2SettingMaxConcurrentStreams, Val: 1000},
+		// These match chrome
 		{ID: http2SettingHeaderTableSize, Val: http2initialHeaderTableSize},
+		{ID: http2SettingMaxConcurrentStreams, Val: 1000},
+		{ID: http2SettingInitialWindowSize, Val: http2transportDefaultStreamFlow},
+		{ID: http2SettingMaxHeaderListSize, Val: 262144},
 	}
-	if max := t.maxHeaderListSize(); max != 0 {
-		initialSettings = append(initialSettings, http2Setting{ID: http2SettingMaxHeaderListSize, Val: max})
-	}
+	//if max := t.maxHeaderListSize(); max != 0 {
+	//	initialSettings = append(initialSettings, http2Setting{ID: http2SettingMaxHeaderListSize, Val: max})
+	//}
 
 	cc.bw.Write(http2clientPreface)
 	cc.fr.WriteSettings(initialSettings...)

@@ -56,7 +56,7 @@ type Options struct {
 	PublicSuffixList PublicSuffixList
 }
 
-// Jar implements the http.CookieJar interface from the goget/http package.
+// Jar implements the http.CookieJar interface from the net/http package.
 type Jar struct {
 	psList PublicSuffixList
 

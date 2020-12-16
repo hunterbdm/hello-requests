@@ -97,10 +97,10 @@ support: https://golang.org/s/http2bug
 The http package's Transport and Server both automatically enable
 HTTP/2 support for simple configurations. To enable HTTP/2 for more
 complex configurations, to use lower-level HTTP/2 features, or to use
-a newer version of Go's http2 package, import "golang.org/x/goget/http2"
+a newer version of Go's http2 package, import "golang.org/x/net/http2"
 directly and use its ConfigureTransport and/or ConfigureServer
-functions. Manually configuring HTTP/2 via the golang.org/x/goget/http2
-package takes precedence over the goget/http package's built-in HTTP/2
+functions. Manually configuring HTTP/2 via the golang.org/x/net/http2
+package takes precedence over the net/http package's built-in HTTP/2
 support.
 
 */

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"github.com/hunterbdm/hello-requests/http"
+	"net/textproto"
 	"strconv"
 	"strings"
 
@@ -218,16 +219,16 @@ func (rw *ResponseRecorder) Result() *http.Response {
 // parseContentLength trims whitespace from s and returns -1 if no value
 // is set, or the value if it's >= 0.
 //
-// This a modified version of same function found in goget/http/transfer.go. This
+// This a modified version of same function found in net/http/transfer.go. This
 // one just ignores an invalid header.
 func parseContentLength(cl string) int64 {
-	cl = strings.TrimSpace(cl)
+	cl = textproto.TrimString(cl)
 	if cl == "" {
 		return -1
 	}
-	n, err := strconv.ParseInt(cl, 10, 64)
+	n, err := strconv.ParseUint(cl, 10, 63)
 	if err != nil {
 		return -1
 	}
-	return n
+	return int64(n)
 }

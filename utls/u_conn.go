@@ -290,7 +290,7 @@ func (c *UConn) clientHandshake() (err error) {
 		c.config = defaultConfig()
 	}
 
-	// This may be a renegotiation handshake, in which case some fields
+	// This may be a Renegotiation handshake, in which case some fields
 	// need to be reset.
 	c.didResume = false
 

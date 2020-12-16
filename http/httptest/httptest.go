@@ -8,7 +8,7 @@ package httptest
 import (
 	"bufio"
 	"bytes"
-	"crypto/tls"
+	"github.com/hunterbdm/hello-requests/utls"
 	"io"
 	"io/ioutil"
 	"github.com/hunterbdm/hello-requests/http"
@@ -37,7 +37,7 @@ import (
 // panic is acceptable.
 //
 // To generate a client HTTP request instead of a server request, see
-// the NewRequest function in the goget/http package.
+// the NewRequest function in the net/http package.
 func NewRequest(method, target string, body io.Reader) *http.Request {
 	if method == "" {
 		method = "GET"

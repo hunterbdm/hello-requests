@@ -10,7 +10,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"crypto/tls"
+	"github.com/hunterbdm/hello-requests/utls"
 	"errors"
 	"fmt"
 	"io"
@@ -54,7 +54,7 @@ var (
 	ErrContentLength = errors.New("http: wrote more than the declared Content-Length")
 
 	// Deprecated: ErrWriteAfterFlush is no longer returned by
-	// anything in the goget/http package. Callers should not
+	// anything in the net/http package. Callers should not
 	// compare errors against this variable.
 	ErrWriteAfterFlush = errors.New("unused")
 )
@@ -425,6 +425,16 @@ type response struct {
 	wants10KeepAlive bool               // HTTP/1.0 w/ Connection "keep-alive"
 	wantsClose       bool               // HTTP request has Connection "close"
 
+	// canWriteContinue is a boolean value accessed as an atomic int32
+	// that says whether or not a 100 Continue header can be written
+	// to the connection.
+	// writeContinueMu must be held while writing the header.
+	// These two fields together synchronize the body reader
+	// (the expectContinueReader, which wants to write 100 Continue)
+	// against the main writer.
+	canWriteContinue atomicBool
+	writeContinueMu  sync.Mutex
+
 	w  *bufio.Writer // buffers output in chunks to chunkWriter
 	cw chunkWriter
 
@@ -484,8 +494,8 @@ type response struct {
 // prior to the headers being written. If the set of trailers is fixed
 // or known before the header is written, the normal Go trailers mechanism
 // is preferred:
-//    https://golang.org/pkg/goget/http/#ResponseWriter
-//    https://golang.org/pkg/goget/http/#example_ResponseWriter_trailers
+//    https://golang.org/pkg/net/http/#ResponseWriter
+//    https://golang.org/pkg/net/http/#example_ResponseWriter_trailers
 const TrailerPrefix = "Trailer:"
 
 // finalTrailers is called after the Handler exits and returns a non-nil
@@ -515,6 +525,7 @@ type atomicBool int32
 
 func (b *atomicBool) isSet() bool { return atomic.LoadInt32((*int32)(b)) != 0 }
 func (b *atomicBool) setTrue()    { atomic.StoreInt32((*int32)(b), 1) }
+func (b *atomicBool) setFalse()   { atomic.StoreInt32((*int32)(b), 0) }
 
 // declareTrailer is called for each Trailer header when the
 // response header is written. It notes that a header will need to be
@@ -629,6 +640,7 @@ func (srv *Server) newConn(rwc net.Conn) *conn {
 }
 
 type readResult struct {
+	_   incomparable
 	n   int
 	err error
 	b   byte // byte read, if n == 1
@@ -877,21 +889,27 @@ type expectContinueReader struct {
 	resp       *response
 	readCloser io.ReadCloser
 	closed     bool
-	sawEOF     bool
+	sawEOF     atomicBool
 }
 
 func (ecr *expectContinueReader) Read(p []byte) (n int, err error) {
 	if ecr.closed {
 		return 0, ErrBodyReadAfterClose
 	}
-	if !ecr.resp.wroteContinue && !ecr.resp.conn.hijacked() {
-		ecr.resp.wroteContinue = true
-		ecr.resp.conn.bufw.WriteString("HTTP/1.1 100 Continue\r\n\r\n")
-		ecr.resp.conn.bufw.Flush()
+	w := ecr.resp
+	if !w.wroteContinue && w.canWriteContinue.isSet() && !w.conn.hijacked() {
+		w.wroteContinue = true
+		w.writeContinueMu.Lock()
+		if w.canWriteContinue.isSet() {
+			w.conn.bufw.WriteString("HTTP/1.1 100 Continue\r\n\r\n")
+			w.conn.bufw.Flush()
+			w.canWriteContinue.setFalse()
+		}
+		w.writeContinueMu.Unlock()
 	}
 	n, err = ecr.readCloser.Read(p)
 	if err == io.EOF {
-		ecr.sawEOF = true
+		ecr.sawEOF.setTrue()
 	}
 	return
 }
@@ -1093,7 +1111,7 @@ func checkWriteHeaderCode(code int) {
 	}
 }
 
-// relevantCaller searches the call stack for the first function outside of goget/http.
+// relevantCaller searches the call stack for the first function outside of net/http.
 // The purpose of this function is to provide more helpful error messages.
 func relevantCaller() runtime.Frame {
 	pc := make([]uintptr, 16)
@@ -1102,7 +1120,7 @@ func relevantCaller() runtime.Frame {
 	var frame runtime.Frame
 	for {
 		frame, more := frames.Next()
-		if !strings.HasPrefix(frame.Function, "github.com/hunterbdm/hello-requests/http.") {
+		if !strings.HasPrefix(frame.Function, "net/http.") {
 			return frame
 		}
 		if !more {
@@ -1310,7 +1328,7 @@ func (cw *chunkWriter) writeHeader(p []byte) {
 	// because we don't know if the next bytes on the wire will be
 	// the body-following-the-timer or the subsequent request.
 	// See Issue 11549.
-	if ecr, ok := w.req.Body.(*expectContinueReader); ok && !ecr.sawEOF {
+	if ecr, ok := w.req.Body.(*expectContinueReader); ok && !ecr.sawEOF.isSet() {
 		w.closeAfterReply = true
 	}
 
@@ -1456,7 +1474,7 @@ func (cw *chunkWriter) writeHeader(p []byte) {
 	}
 
 	writeStatusLine(w.conn.bufw, w.req.ProtoAtLeast(1, 1), code, w.statusBuf[:])
-	cw.header.WriteSubset(w.conn.bufw, excludeHeader)
+	cw.header.WriteSubset(w.conn.bufw, excludeHeader, []string{})
 	setHeader.Write(w.conn.bufw)
 	w.conn.bufw.Write(crlf)
 }
@@ -1560,6 +1578,17 @@ func (w *response) write(lenData int, dataB []byte, dataS string) (n int, err er
 		}
 		return 0, ErrHijacked
 	}
+
+	if w.canWriteContinue.isSet() {
+		// Body reader wants to write 100 Continue but hasn't yet.
+		// Tell it not to. The store must be done while holding the lock
+		// because the lock makes sure that there is not an active write
+		// this very moment.
+		w.writeContinueMu.Lock()
+		w.canWriteContinue.setFalse()
+		w.writeContinueMu.Unlock()
+	}
+
 	if !w.wroteHeader {
 		w.WriteHeader(StatusOK)
 	}
@@ -1697,9 +1726,9 @@ func (c *conn) closeWriteAndWait() {
 	time.Sleep(rstAvoidanceDelay)
 }
 
-// validNextProto reports whether the proto is not a blacklisted ALPN
-// protocol name. Empty and built-in protocol types are blacklisted
-// and can't be overridden with alternate implementations.
+// validNextProto reports whether the proto is a valid ALPN protocol name.
+// Everything is valid except the empty string and built-in protocol types,
+// so that those can't be overridden with alternate implementations.
 func validNextProto(proto string) bool {
 	switch proto {
 	case "", "http/1.1", "http/1.0":
@@ -1742,7 +1771,7 @@ func (e badRequestError) Error() string { return "Bad Request: " + string(e) }
 // While any panic from ServeHTTP aborts the response to the client,
 // panicking with ErrAbortHandler also suppresses logging of a stack
 // trace to the server's error log.
-var ErrAbortHandler = errors.New("http: abort Handler")
+var ErrAbortHandler = errors.New("net/http: abort Handler")
 
 // isCommonNetReadError reports whether err is a common error
 // encountered during reading a request off the network when the
@@ -1871,6 +1900,7 @@ func (c *conn) serve(ctx context.Context) {
 			if req.ProtoAtLeast(1, 1) && req.ContentLength != 0 {
 				// Wrap the Body reader with one that replies on the connection
 				req.Body = &expectContinueReader{readCloser: req.Body, resp: w}
+				w.canWriteContinue.setTrue()
 			}
 		} else if req.Header.get("Expect") != "" {
 			w.sendExpectationFailed()
@@ -1947,7 +1977,7 @@ func (w *response) sendExpectationFailed() {
 // and a Hijacker.
 func (w *response) Hijack() (rwc net.Conn, buf *bufio.ReadWriter, err error) {
 	if w.handlerDone.isSet() {
-		panic("http: Hijack called after ServeHTTP finished")
+		panic("net/http: Hijack called after ServeHTTP finished")
 	}
 	if w.wroteHeader {
 		w.cw.flush()
@@ -1969,7 +1999,7 @@ func (w *response) Hijack() (rwc net.Conn, buf *bufio.ReadWriter, err error) {
 
 func (w *response) CloseNotify() <-chan bool {
 	if w.handlerDone.isSet() {
-		panic("http: CloseNotify called after ServeHTTP finished")
+		panic("net/http: CloseNotify called after ServeHTTP finished")
 	}
 	return w.closeNotifyCh
 }
@@ -2577,8 +2607,9 @@ type Server struct {
 	// value.
 	ConnContext func(ctx context.Context, c net.Conn) context.Context
 
+	inShutdown atomicBool // true when when server is in shutdown
+
 	disableKeepAlives int32     // accessed atomically.
-	inShutdown        int32     // accessed atomically (non-zero means we're in Shutdown)
 	nextProtoOnce     sync.Once // guards setupHTTP2_* init
 	nextProtoErr      error     // result of http2.ConfigureServer if used
 
@@ -2624,7 +2655,7 @@ func (s *Server) closeDoneChanLocked() {
 // Close returns any error returned from closing the Server's
 // underlying Listener(s).
 func (srv *Server) Close() error {
-	atomic.StoreInt32(&srv.inShutdown, 1)
+	srv.inShutdown.setTrue()
 	srv.mu.Lock()
 	defer srv.mu.Unlock()
 	srv.closeDoneChanLocked()
@@ -2666,7 +2697,7 @@ var shutdownPollInterval = 500 * time.Millisecond
 // Once Shutdown has been called on a server, it may not be reused;
 // future calls to methods such as Serve will return ErrServerClosed.
 func (srv *Server) Shutdown(ctx context.Context) error {
-	atomic.StoreInt32(&srv.inShutdown, 1)
+	srv.inShutdown.setTrue()
 
 	srv.mu.Lock()
 	lnerr := srv.closeListenersLocked()
@@ -2679,7 +2710,7 @@ func (srv *Server) Shutdown(ctx context.Context) error {
 	ticker := time.NewTicker(shutdownPollInterval)
 	defer ticker.Stop()
 	for {
-		if srv.closeIdleConns() {
+		if srv.closeIdleConns() && srv.numListeners() == 0 {
 			return lnerr
 		}
 		select {
@@ -2699,6 +2730,12 @@ func (srv *Server) RegisterOnShutdown(f func()) {
 	srv.mu.Lock()
 	srv.onShutdown = append(srv.onShutdown, f)
 	srv.mu.Unlock()
+}
+
+func (s *Server) numListeners() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.listeners)
 }
 
 // closeIdleConns closes all idle connections and reports whether the
@@ -2733,7 +2770,6 @@ func (s *Server) closeListenersLocked() error {
 		if cerr := (*ln).Close(); cerr != nil && err == nil {
 			err = cerr
 		}
-		delete(s.listeners, ln)
 	}
 	return err
 }
@@ -3032,9 +3068,7 @@ func (s *Server) doKeepAlives() bool {
 }
 
 func (s *Server) shuttingDown() bool {
-	// TODO: replace inShutdown with the existing atomicBool type;
-	// see https://github.com/golang/go/issues/20239#issuecomment-381434582
-	return atomic.LoadInt32(&s.inShutdown) != 0
+	return s.inShutdown.isSet()
 }
 
 // SetKeepAlivesEnabled controls whether HTTP keep-alives are enabled.
@@ -3362,7 +3396,7 @@ type initALPNRequest struct {
 }
 
 // BaseContext is an exported but unadvertised http.Handler method
-// recognized by x/goget/http2 to pass down a context; the TLSNextProto
+// recognized by x/net/http2 to pass down a context; the TLSNextProto
 // API predates context support so we shoehorn through the only
 // interface we have available.
 func (h initALPNRequest) BaseContext() context.Context { return h.ctx }

@@ -205,7 +205,7 @@ func (e *RenegotiationInfoExtension) writeToUConn(uc *UConn) error {
 		fallthrough
 	case RenegotiateFreelyAsClient:
 		uc.HandshakeState.Hello.SecureRenegotiationSupported = true
-		// Note that if we manage to use this in renegotiation(currently only in initial handshake), we'd have to point
+		// Note that if we manage to use this in Renegotiation(currently only in initial handshake), we'd have to point
 		// uc.ClientHelloMsg.SecureRenegotiation = chs.C.clientFinished
 		// and probably do something else. It's a mess.
 	case RenegotiateNever:
@@ -341,17 +341,10 @@ func (e *SessionTicketExtension) writeToUConn(uc *UConn) error {
 }
 
 func (e *SessionTicketExtension) Len() int {
-
-	if e.Session == nil {
-		return 4
+	if e.Session != nil {
+		return 4 + len(e.Session.sessionTicket)
 	}
-
-	// TLS 1.3 uses PSK in place of Session Ticket Extension
-	if e.Session.vers == VersionTLS13 {
-		return 4
-	}
-
-	return 4 + len(e.Session.sessionTicket)
+	return 4
 }
 
 func (e *SessionTicketExtension) Read(b []byte) (int, error) {
@@ -359,15 +352,10 @@ func (e *SessionTicketExtension) Read(b []byte) (int, error) {
 		return 0, io.ErrShortBuffer
 	}
 
+	extBodyLen := e.Len() - 4
+
 	b[0] = byte(extensionSessionTicket >> 8)
 	b[1] = byte(extensionSessionTicket)
-
-	// TLS 1.3 uses PSK in place of Session Ticket Extension
-	if e.Session != nil && e.Session.vers == VersionTLS13 {
-		return e.Len(), io.EOF
-	}
-
-	extBodyLen := e.Len() - 4
 	b[2] = byte(extBodyLen >> 8)
 	b[3] = byte(extBodyLen)
 	if extBodyLen > 0 {

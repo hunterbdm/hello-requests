@@ -166,7 +166,7 @@ func (c *Conn) clientHandshake() (err error) {
 		c.config = defaultConfig()
 	}
 
-	// This may be a renegotiation handshake, in which case some fields
+	// This may be a Renegotiation handshake, in which case some fields
 	// need to be reset.
 	c.didResume = false
 
@@ -259,7 +259,7 @@ func (c *Conn) loadSession(hello *clientHelloMsg) (cacheKey string,
 	}
 
 	// Session resumption is not allowed if renegotiating because
-	// renegotiation is primarily used to allow a client to send a client
+	// Renegotiation is primarily used to allow a client to send a client
 	// certificate, which would be skipped if session resumption occurred.
 	if c.handshakes != 0 {
 		return "", nil, nil, nil
@@ -481,7 +481,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 			return err
 		}
 	} else {
-		// This is a renegotiation handshake. We require that the
+		// This is a Renegotiation handshake. We require that the
 		// server's identity (i.e. leaf certificate) is unchanged and
 		// thus any previous trust decision is still valid.
 		//
@@ -489,7 +489,7 @@ func (hs *clientHandshakeState) doFullHandshake() error {
 		// motivation behind this requirement.
 		if !bytes.Equal(c.peerCertificates[0].Raw, certMsg.certificates[0]) {
 			c.sendAlert(alertBadCertificate)
-			return errors.New("tls: server's identity changed during renegotiation")
+			return errors.New("tls: server's identity changed during Renegotiation")
 		}
 	}
 
@@ -689,7 +689,7 @@ func (hs *clientHandshakeState) processServerHello() (bool, error) {
 		c.secureRenegotiation = true
 		if len(hs.serverHello.secureRenegotiation) != 0 {
 			c.sendAlert(alertHandshakeFailure)
-			return false, errors.New("tls: initial handshake had non-empty renegotiation extension")
+			return false, errors.New("tls: initial handshake had non-empty Renegotiation extension")
 		}
 	}
 
@@ -699,7 +699,7 @@ func (hs *clientHandshakeState) processServerHello() (bool, error) {
 		copy(expectedSecureRenegotiation[12:], c.serverFinished[:])
 		if !bytes.Equal(hs.serverHello.secureRenegotiation, expectedSecureRenegotiation[:]) {
 			c.sendAlert(alertHandshakeFailure)
-			return false, errors.New("tls: incorrect renegotiation extension contents")
+			return false, errors.New("tls: incorrect Renegotiation extension contents")
 		}
 	}
 

@@ -532,9 +532,14 @@ func (uconn *UConn) ApplyPreset(p *ClientHelloSpec) error {
 	for i := range uconn.greaseSeed {
 		uconn.greaseSeed[i] = binary.LittleEndian.Uint16(grease_bytes[2*i : 2*i+2])
 	}
-	if uconn.greaseSeed[ssl_grease_extension1] == uconn.greaseSeed[ssl_grease_extension2] {
+
+	// Verify the two GREASE extensions dont have the same ID because it will break some sites (shopify)
+	if GetBoringGREASEValue(uconn.greaseSeed, ssl_grease_extension1) == GetBoringGREASEValue(uconn.greaseSeed, ssl_grease_extension2) {
 		uconn.greaseSeed[ssl_grease_extension2] ^= 0x1010
 	}
+	//if uconn.greaseSeed[ssl_grease_extension1] == uconn.greaseSeed[ssl_grease_extension2] {
+	//	uconn.greaseSeed[ssl_grease_extension2] ^= 0x1010
+	//}
 
 	hello.CipherSuites = make([]uint16, len(p.CipherSuites))
 	copy(hello.CipherSuites, p.CipherSuites)

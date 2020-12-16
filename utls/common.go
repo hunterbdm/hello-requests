@@ -223,7 +223,7 @@ type ConnectionState struct {
 
 // ExportKeyingMaterial returns length bytes of exported key material in a new
 // slice as defined in RFC 5705. If context is nil, it is not used as part of
-// the seed. If the connection was set to allow renegotiation via
+// the seed. If the connection was set to allow Renegotiation via
 // Config.Renegotiation, this function will return an error.
 func (cs *ConnectionState) ExportKeyingMaterial(label string, context []byte, length int) ([]byte, error) {
 	return cs.ekm(label, context, length)
@@ -373,31 +373,31 @@ type CertificateRequestInfo struct {
 }
 
 // RenegotiationSupport enumerates the different levels of support for TLS
-// renegotiation. TLS renegotiation is the act of performing subsequent
+// Renegotiation. TLS Renegotiation is the act of performing subsequent
 // handshakes on a connection after the first. This significantly complicates
 // the state machine and has been the source of numerous, subtle security
-// issues. Initiating a renegotiation is not supported, but support for
-// accepting renegotiation requests may be enabled.
+// issues. Initiating a Renegotiation is not supported, but support for
+// accepting Renegotiation requests may be enabled.
 //
 // Even when enabled, the server may not change its identity between handshakes
 // (i.e. the leaf certificate must be the same). Additionally, concurrent
-// handshake and application data flow is not permitted so renegotiation can
-// only be used with protocols that synchronise with the renegotiation, such as
+// handshake and application data flow is not permitted so Renegotiation can
+// only be used with protocols that synchronise with the Renegotiation, such as
 // HTTPS.
 //
 // Renegotiation is not defined in TLS 1.3.
 type RenegotiationSupport int
 
 const (
-	// RenegotiateNever disables renegotiation.
+	// RenegotiateNever disables Renegotiation.
 	RenegotiateNever RenegotiationSupport = iota
 
 	// RenegotiateOnceAsClient allows a remote server to request
-	// renegotiation once per connection.
+	// Renegotiation once per connection.
 	RenegotiateOnceAsClient
 
 	// RenegotiateFreelyAsClient allows a remote server to repeatedly
-	// request renegotiation.
+	// request Renegotiation.
 	RenegotiateFreelyAsClient
 )
 
@@ -452,7 +452,7 @@ type Config struct {
 	// the handshake.
 	//
 	// GetClientCertificate may be called multiple times for the same
-	// connection if renegotiation occurs or if TLS 1.3 is in use.
+	// connection if Renegotiation occurs or if TLS 1.3 is in use.
 	GetClientCertificate func(*CertificateRequestInfo) (*Certificate, error)
 
 	// GetConfigForClient, if not nil, is called after a ClientHello is
@@ -570,7 +570,7 @@ type Config struct {
 	// improve latency.
 	DynamicRecordSizingDisabled bool
 
-	// Renegotiation controls what types of renegotiation are supported.
+	// Renegotiation controls what types of Renegotiation are supported.
 	// The default, none, is correct for the vast majority of applications.
 	Renegotiation RenegotiationSupport
 

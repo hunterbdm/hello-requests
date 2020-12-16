@@ -44,11 +44,11 @@ type clientHandshakeStateTLS13 struct {
 func (hs *clientHandshakeStateTLS13) handshake() error {
 	c := hs.c
 
-	// The server must not select TLS 1.3 in a renegotiation. See RFC 8446,
+	// The server must not select TLS 1.3 in a Renegotiation. See RFC 8446,
 	// sections 4.1.2 and 4.1.3.
 	if c.handshakes > 0 {
 		c.sendAlert(alertProtocolVersion)
-		return errors.New("tls: server selected TLS 1.3 in a renegotiation")
+		return errors.New("tls: server selected TLS 1.3 in a Renegotiation")
 	}
 
 	// Consistency check on the presence of a keyShare and its parameters.

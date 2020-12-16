@@ -66,7 +66,7 @@ var alertText = map[alert]string{
 	alertInternalError:          "internal error",
 	alertInappropriateFallback:  "inappropriate fallback",
 	alertUserCanceled:           "user canceled",
-	alertNoRenegotiation:        "no renegotiation",
+	alertNoRenegotiation:        "no Renegotiation",
 	alertMissingExtension:       "missing extension",
 	alertUnsupportedExtension:   "unsupported extension",
 	alertNoApplicationProtocol:  "no application protocol",

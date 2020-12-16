@@ -7,7 +7,7 @@
 package httptest
 
 import (
-	"crypto/tls"
+	"github.com/hunterbdm/hello-requests/utls"
 	"crypto/x509"
 	"flag"
 	"fmt"

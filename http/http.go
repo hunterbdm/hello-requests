@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:generate bundle -o=h2_bundle.go -prefix=http2 -tags=!nethttpomithttp2 golang.org/x/goget/http2
+//go:generate bundle -o=h2_bundle.go -prefix=http2 -tags=!nethttpomithttp2 golang.org/x/net/http2
 
 package http
 
@@ -15,6 +15,11 @@ import (
 
 	"golang.org/x/net/http/httpguts"
 )
+
+// incomparable is a zero-width, non-comparable type. Adding it to a struct
+// makes that struct also non-comparable, and generally doesn't add
+// any size (as long as it's first).
+type incomparable [0]func()
 
 // maxInt64 is the effective "infinite" value for the Server and
 // Transport's byte-limiting readers.
@@ -38,7 +43,7 @@ type contextKey struct {
 	name string
 }
 
-func (k *contextKey) String() string { return "http context value " + k.name }
+func (k *contextKey) String() string { return "net/http context value " + k.name }
 
 // Given a string of the form "host", "host:port", or "[ipv6::address]:port",
 // return true if the string includes a port.

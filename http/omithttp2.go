@@ -18,7 +18,7 @@ func init() {
 
 const noHTTP2 = "no bundled HTTP/2" // should never see this
 
-var http2errRequestCanceled = errors.New("http: request canceled")
+var http2errRequestCanceled = errors.New("net/http: request canceled")
 
 var http2goAwayTimeout = 1 * time.Second
 
@@ -32,7 +32,7 @@ type http2Transport struct {
 func (*http2Transport) RoundTrip(*Request) (*Response, error) { panic(noHTTP2) }
 func (*http2Transport) CloseIdleConnections()                 {}
 
-type http2erringRoundTripper struct{}
+type http2erringRoundTripper struct{ err error }
 
 func (http2erringRoundTripper) RoundTrip(*Request) (*Response, error) { panic(noHTTP2) }
 

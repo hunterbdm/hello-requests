@@ -5,14 +5,13 @@
 package http
 
 import (
+	"github.com/hunterbdm/hello-requests/http/httptrace"
 	"io"
 	"net/textproto"
 	"sort"
 	"strings"
 	"sync"
 	"time"
-
-	"github.com/hunterbdm/hello-requests/http/httptrace"
 )
 
 // A Header represents the key-value pairs in an HTTP header.
@@ -84,7 +83,7 @@ func (h Header) Write(w io.Writer) error {
 }
 
 func (h Header) write(w io.Writer, trace *httptrace.ClientTrace) error {
-	return h.writeSubset(w, nil, trace)
+	return h.writeSubset(w, nil, trace, []string{})
 }
 
 // Clone returns a copy of h or nil if h is nil.
@@ -180,22 +179,24 @@ func (h Header) sortedKeyValues(exclude map[string]bool) (kvs []keyValues, hs *h
 // WriteSubset writes a header in wire format.
 // If exclude is not nil, keys where exclude[key] == true are not written.
 // Keys are not canonicalized before checking the exclude map.
-func (h Header) WriteSubset(w io.Writer, exclude map[string]bool) error {
-	return h.writeSubset(w, exclude, nil)
+func (h Header) WriteSubset(w io.Writer, exclude map[string]bool, order []string) error {
+	return h.writeSubset(w, exclude, nil, order)
 }
 
-func (h Header) writeSubset(w io.Writer, exclude map[string]bool, trace *httptrace.ClientTrace) error {
+// [hello-requests] added HeaderOrder to this function
+func (h Header) writeSubset(w io.Writer, exclude map[string]bool, trace *httptrace.ClientTrace, order []string) error {
 	ws, ok := w.(io.StringWriter)
 	if !ok {
 		ws = stringWriter{w}
 	}
 	kvs, sorter := h.sortedKeyValues(exclude)
+
+	// [hello-requests] changes start
 	var formattedVals []string
-	for _, kv := range kvs {
+	handleHeaders := func(kv keyValues) error {
 		for _, v := range kv.values {
 			v = headerNewlineToSpace.Replace(v)
 			v = textproto.TrimString(v)
-
 			for _, s := range []string{kv.key, ": ", v, "\r\n"} {
 				if _, err := ws.WriteString(s); err != nil {
 					headerSorterPool.Put(sorter)
@@ -210,57 +211,42 @@ func (h Header) writeSubset(w io.Writer, exclude map[string]bool, trace *httptra
 			trace.WroteHeaderField(kv.key, formattedVals)
 			formattedVals = nil
 		}
-	}
-	headerSorterPool.Put(sorter)
-	return nil
-}
 
-func (h Header) writeSubsetOrdered(w io.Writer, headerOrder []string, trace *httptrace.ClientTrace) error {
-	ws, ok := w.(io.StringWriter)
-	if !ok {
-		ws = stringWriter{w}
+		return nil
 	}
-	//kvs, sorter := h.sortedKeyValues(exclude)
-	var formattedVals []string
 
-	// Add missing headers to headerOrder array
-	for headerName := range h {
-		missing := true
-		for _, name := range headerOrder {
-			if name == headerName {
-				missing = false
+	// [hello-requests] Write ordered headers
+	for _, headerName := range order {
+		for _, kv := range kvs {
+			if strings.EqualFold(headerName, kv.key) {
+				if err := handleHeaders(kv); err != nil {
+					return err
+				}
+				break
+			}
+		}
+	}
+
+	// [hello-requests] Write unordered headers
+	for _, kv := range kvs {
+		var skip bool
+		for _, headerName := range order {
+			if strings.EqualFold(headerName, kv.key) {
+				skip = true
 				break
 			}
 		}
 
-		if missing {
-			headerOrder = append(headerOrder, headerName)
-		}
-	}
-
-	for _, headerName := range headerOrder {
-		if headerValues, ok := h[headerName]; ok {
-			for _, val := range headerValues {
-				val = headerNewlineToSpace.Replace(val)
-				val = textproto.TrimString(val)
-
-				for _, s := range []string{headerName, ": ", val, "\r\n"} {
-					if _, err := ws.WriteString(s); err != nil {
-						return err
-					}
-				}
-				if trace != nil && trace.WroteHeaderField != nil {
-					formattedVals = append(formattedVals, val)
-				}
-			}
-
-			if trace != nil && trace.WroteHeaderField != nil {
-				trace.WroteHeaderField(headerName, formattedVals)
-				formattedVals = nil
+		if !skip {
+			if err := handleHeaders(kv); err != nil {
+				return err
 			}
 		}
 	}
 
+	// [hello-requests] changes end
+
+	headerSorterPool.Put(sorter)
 	return nil
 }
 

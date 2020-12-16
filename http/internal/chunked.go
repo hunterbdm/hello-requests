@@ -4,8 +4,8 @@
 
 // The wire protocol for HTTP's "chunked" Transfer-Encoding.
 
-// Package internal contains HTTP internals shared by goget/http and
-// goget/http/httputil.
+// Package internal contains HTTP internals shared by net/http and
+// net/http/httputil.
 package internal
 
 import (

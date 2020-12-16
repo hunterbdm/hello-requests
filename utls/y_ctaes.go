@@ -19,7 +19,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 
-	"github.com/hunterbdm/hello-requests/bsaes"
+	"gitlab.com/yawning/bsaes"
 )
 
 var aesNewCipher func([]byte) (cipher.Block, error)

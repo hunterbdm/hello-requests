@@ -10,7 +10,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"crypto/tls"
+	"github.com/hunterbdm/hello-requests/utls"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -19,14 +19,13 @@ import (
 	"mime"
 	"mime/multipart"
 	"net"
+	"github.com/hunterbdm/hello-requests/http/httptrace"
 	"net/textproto"
 	"net/url"
 	urlpkg "net/url"
 	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/hunterbdm/hello-requests/http/httptrace"
 
 	"golang.org/x/net/idna"
 )
@@ -56,7 +55,7 @@ var (
 	ErrNotSupported = &ProtocolError{"feature not supported"}
 
 	// Deprecated: ErrUnexpectedTrailer is no longer returned by
-	// anything in the goget/http package. Callers should not
+	// anything in the net/http package. Callers should not
 	// compare errors against this variable.
 	ErrUnexpectedTrailer = &ProtocolError{"trailer header without chunked transfer encoding"}
 
@@ -69,35 +68,33 @@ var (
 	ErrNotMultipart = &ProtocolError{"request Content-Type isn't multipart/form-data"}
 
 	// Deprecated: ErrHeaderTooLong is no longer returned by
-	// anything in the goget/http package. Callers should not
+	// anything in the net/http package. Callers should not
 	// compare errors against this variable.
 	ErrHeaderTooLong = &ProtocolError{"header too long"}
 
 	// Deprecated: ErrShortBody is no longer returned by
-	// anything in the goget/http package. Callers should not
+	// anything in the net/http package. Callers should not
 	// compare errors against this variable.
 	ErrShortBody = &ProtocolError{"entity body too short"}
 
 	// Deprecated: ErrMissingContentLength is no longer returned by
-	// anything in the goget/http package. Callers should not
+	// anything in the net/http package. Callers should not
 	// compare errors against this variable.
 	ErrMissingContentLength = &ProtocolError{"missing ContentLength in HEAD response"}
 )
 
-type badStringError struct {
-	what string
-	str  string
-}
+func badStringError(what, val string) error { return fmt.Errorf("%s %q", what, val) }
 
-func (e *badStringError) Error() string { return fmt.Sprintf("%s %q", e.what, e.str) }
+// [hello-requests] Add(and now write) the missing headers here
+// so they will written in the correct order later
 
 // Headers that Request.Write handles itself and should be skipped.
 var reqWriteExcludeHeader = map[string]bool{
-	"Host":              true, // not in Header map anyway
-	"User-Agent":        true,
-	"Content-Length":    true,
-	"Transfer-Encoding": true,
-	"Trailer":           true,
+	"Host":              false, // not in Header map anyway
+	"User-Agent":        false,
+	"Content-Length":    false,
+	"Transfer-Encoding": false,
+	"Trailer":           false,
 }
 
 // A Request represents an HTTP request received by a server
@@ -169,10 +166,13 @@ type Request struct {
 	// and Connection are automatically written when needed and
 	// values in Header may be ignored. See the documentation
 	// for the Request.Write method.
-	Header      Header
-	HeaderOrder []string
+	Header Header
 
-	MimicBrowser string
+
+	// hello-requests additions starts
+	HeaderOrder []string
+	H2HeaderOrder []string
+	// hello-requests additions end
 
 	// Body is the request's body.
 	//
@@ -391,7 +391,7 @@ func (r *Request) Clone(ctx context.Context) *Request {
 	if s := r.TransferEncoding; s != nil {
 		s2 := make([]string, len(s))
 		copy(s2, s)
-		r2.TransferEncoding = s
+		r2.TransferEncoding = s2
 	}
 	r2.Form = cloneURLValues(r.Form)
 	r2.PostForm = cloneURLValues(r.PostForm)
@@ -434,6 +434,8 @@ func (r *Request) Cookie(name string) (*Cookie, error) {
 // AddCookie does not attach more than one Cookie header field. That
 // means all cookies, if any, are written into the same line,
 // separated by semicolon.
+// AddCookie only sanitizes c's name and value, and does not sanitize
+// a Cookie header already present in the request.
 func (r *Request) AddCookie(c *Cookie) {
 	s := fmt.Sprintf("%s=%s", sanitizeCookieName(c.Name), sanitizeCookieValue(c.Value))
 	if c := r.Header.Get("Cookie"); c != "" {
@@ -510,7 +512,7 @@ func valueOrDefault(value, def string) string {
 
 // NOTE: This is not intended to reflect the actual Go version being used.
 // It was changed at the time of Go 1.1 release because the former User-Agent
-// had ended up on a blacklist for some intrusion detection systems.
+// had ended up blocked by some intrusion detection systems.
 // See https://codereview.appspot.com/7532043.
 const defaultUserAgent = "Go-http-client/1.1"
 
@@ -585,7 +587,7 @@ func (r *Request) write(w io.Writer, usingProxy bool, extraHeaders Header, waitF
 		}
 	}
 	if stringContainsCTLByte(ruri) {
-		return errors.New("http: can't write control character in Request.URL")
+		return errors.New("net/http: can't write control character in Request.URL")
 	}
 	// TODO: validate r.Method too? At least it's less likely to
 	// come from an attacker (more likely to be a constant in
@@ -606,64 +608,62 @@ func (r *Request) write(w io.Writer, usingProxy bool, extraHeaders Header, waitF
 		return err
 	}
 
+	// [hello-requests] dont write headers here so we can order them later
+
 	// Header lines
+	//_, err = fmt.Fprintf(w, "Host: %s\r\n", host)
+	//if err != nil {
+	//	return err
+	//}
+	//if trace != nil && trace.WroteHeaderField != nil {
+	//	trace.WroteHeaderField("Host", []string{host})
+	//}
 
-	r.Header.Set("Host", host)
-
-	// _, err = fmt.Fprintf(w, "Host: %s\r\n", host)
-	// if err != nil {
-	// 	return err
-	// }
-	// if trace != nil && trace.WroteHeaderField != nil {
-	// 	trace.WroteHeaderField("Host", []string{host})
-	// }
 
 	// Use the defaultUserAgent unless the Header contains one, which
 	// may be blank to not send the header.
-	// userAgent := defaultUserAgent
-	// if r.Header.has("User-Agent") {
-	// 	userAgent = r.Header.Get("User-Agent")
-	// }
-	// if userAgent != "" {
-	// 	_, err = fmt.Fprintf(w, "User-Agent: %s\r\n", userAgent)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	if trace != nil && trace.WroteHeaderField != nil {
-	// 		trace.WroteHeaderField("User-Agent", []string{userAgent})
-	// 	}
-	// }
+	//userAgent := defaultUserAgent
+	//if r.Header.has("User-Agent") {
+	//	userAgent = r.Header.Get("User-Agent")
+	//}
+	//if userAgent != "" {
+	//	_, err = fmt.Fprintf(w, "User-Agent: %s\r\n", userAgent)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	if trace != nil && trace.WroteHeaderField != nil {
+	//		trace.WroteHeaderField("User-Agent", []string{userAgent})
+	//	}
+	//}
+
+	// [hello-requests] Set(and not write) the missing headers here
+	// and they will written in the correct order later
+	if !r.Header.has("User-Agent") {
+		r.Header.Set("User-Agent", defaultUserAgent)
+	}
+	if !r.Header.has("Host") {
+		r.Header.Set("Host", host)
+	}
 
 	// Process Body,ContentLength,Close,Trailer
 	tw, err := newTransferWriter(r)
 	if err != nil {
 		return err
 	}
-	// err = tw.writeHeader(w, trace)
-	// if err != nil {
-	// 	return err
-	// }
 
-	/* Edited code starts here */
+	// [hello-requests] Use custom addHeaders instead of writeHeaders
+	// because we write headers in correct order later
 
-	if r.HeaderOrder != nil && len(r.HeaderOrder) > 0 {
-		err = r.Header.writeSubsetOrdered(w, r.HeaderOrder, trace)
-		if err != nil {
-			return err
-		}
-	} else {
-		err = tw.writeHeader(w, trace)
-		if err != nil {
-			return err
-		}
-
-		err = r.Header.writeSubset(w, reqWriteExcludeHeader, trace)
-		if err != nil {
-			return err
-		}
+	//err = tw.writeHeader(w, trace)
+	err = tw.addHeaders(&r.Header)
+	if err != nil {
+		return err
 	}
 
-	/* Edited code ends here */
+	err = r.Header.writeSubset(w, reqWriteExcludeHeader, trace, r.HeaderOrder)
+	if err != nil {
+		return err
+	}
 
 	if extraHeaders != nil {
 		err = extraHeaders.write(w, trace)
@@ -721,7 +721,7 @@ func (r *Request) write(w io.Writer, usingProxy bool, extraHeaders Header, waitF
 
 // requestBodyReadError wraps an error from (*Request).write to indicate
 // that the error came from a Read call on the Request.Body.
-// This error type should not escape the goget/http package to users.
+// This error type should not escape the net/http package to users.
 type requestBodyReadError struct{ error }
 
 func idnaASCII(v string) (string, error) {
@@ -849,7 +849,7 @@ func NewRequest(method, url string, body io.Reader) (*Request, error) {
 // NewRequestWithContext returns a Request suitable for use with
 // Client.Do or Transport.RoundTrip. To create a request for use with
 // testing a Server Handler, either use the NewRequest function in the
-// goget/http/httptest package, use ReadRequest, or manually update the
+// net/http/httptest package, use ReadRequest, or manually update the
 // Request fields. For an outgoing client request, the context
 // controls the entire lifetime of a request and its response:
 // obtaining a connection, sending the request, and reading the
@@ -869,10 +869,10 @@ func NewRequestWithContext(ctx context.Context, method, url string, body io.Read
 		method = "GET"
 	}
 	if !validMethod(method) {
-		return nil, fmt.Errorf("http: invalid method %q", method)
+		return nil, fmt.Errorf("net/http: invalid method %q", method)
 	}
 	if ctx == nil {
-		return nil, errors.New("http: nil Context")
+		return nil, errors.New("net/http: nil Context")
 	}
 	u, err := urlpkg.Parse(url)
 	if err != nil {
@@ -1018,7 +1018,7 @@ func putTextprotoReader(r *textproto.Reader) {
 // ReadRequest is a low-level function and should only be used for
 // specialized applications; most code should use the Server to read
 // requests and handle them via the Handler interface. ReadRequest
-// only supports HTTP/1.x requests. For HTTP/2, use golang.org/x/goget/http2.
+// only supports HTTP/1.x requests. For HTTP/2, use golang.org/x/net/http2.
 func ReadRequest(b *bufio.Reader) (*Request, error) {
 	return readRequest(b, deleteHostHeader)
 }
@@ -1048,14 +1048,14 @@ func readRequest(b *bufio.Reader, deleteHostHeader bool) (req *Request, err erro
 	var ok bool
 	req.Method, req.RequestURI, req.Proto, ok = parseRequestLine(s)
 	if !ok {
-		return nil, &badStringError{"malformed HTTP request", s}
+		return nil, badStringError("malformed HTTP request", s)
 	}
 	if !validMethod(req.Method) {
-		return nil, &badStringError{"invalid method", req.Method}
+		return nil, badStringError("invalid method", req.Method)
 	}
 	rawurl := req.RequestURI
 	if req.ProtoMajor, req.ProtoMinor, ok = ParseHTTPVersion(req.Proto); !ok {
-		return nil, &badStringError{"malformed HTTP version", req.Proto}
+		return nil, badStringError("malformed HTTP version", req.Proto)
 	}
 
 	// CONNECT requests are used two different ways, and neither uses a full URL:

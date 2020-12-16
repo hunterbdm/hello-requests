@@ -38,7 +38,7 @@ type Conn struct {
 	haveVers       bool    // version has been negotiated
 	config         *Config // configuration passed to constructor
 	// handshakes counts the number of handshakes performed on the
-	// connection so far. If renegotiation is disabled then this is either
+	// connection so far. If Renegotiation is disabled then this is either
 	// zero or one.
 	handshakes       int
 	didResume        bool // whether this connection was a session resumption
@@ -52,8 +52,8 @@ type Conn struct {
 	// serverName contains the server name indicated by the client, if any.
 	serverName string
 	// secureRenegotiation is true if the server echoed the secure
-	// renegotiation extension. (This is meaningless as a server because
-	// renegotiation is not supported in that case.)
+	// Renegotiation extension. (This is meaningless as a server because
+	// Renegotiation is not supported in that case.)
 	secureRenegotiation bool
 	// ekm is a closure for exporting keying material.
 	ekm func(label string, context []byte, length int) ([]byte, error)
@@ -75,7 +75,7 @@ type Conn struct {
 
 	// clientFinished and serverFinished contain the Finished message sent
 	// by the client or server in the most recent handshake. This is
-	// retained to support the renegotiation extension and tls-unique
+	// retained to support the Renegotiation extension and tls-unique
 	// channel-binding.
 	clientFinished [12]byte
 	serverFinished [12]byte
@@ -1120,7 +1120,7 @@ func (c *Conn) Write(b []byte) (int, error) {
 // handleRenegotiation processes a HelloRequest handshake message.
 func (c *Conn) handleRenegotiation() error {
 	if c.vers == VersionTLS13 {
-		return errors.New("tls: internal error: unexpected renegotiation")
+		return errors.New("tls: internal error: unexpected Renegotiation")
 	}
 
 	msg, err := c.readHandshake()
@@ -1163,7 +1163,7 @@ func (c *Conn) handleRenegotiation() error {
 }
 
 // handlePostHandshakeMessage processes a handshake message arrived after the
-// handshake is complete. Up to TLS 1.2, it indicates the start of a renegotiation.
+// handshake is complete. Up to TLS 1.2, it indicates the start of a Renegotiation.
 func (c *Conn) handlePostHandshakeMessage() error {
 	if c.vers != VersionTLS13 {
 		return c.handleRenegotiation()

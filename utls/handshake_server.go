@@ -229,7 +229,7 @@ Curves:
 
 	if len(hs.clientHello.secureRenegotiation) != 0 {
 		c.sendAlert(alertHandshakeFailure)
-		return errors.New("tls: initial handshake had non-empty renegotiation extension")
+		return errors.New("tls: initial handshake had non-empty Renegotiation extension")
 	}
 
 	hs.hello.secureRenegotiationSupported = hs.clientHello.secureRenegotiationSupported

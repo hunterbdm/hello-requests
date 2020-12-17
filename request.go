@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/hunterbdm/hello-requests/compress"
 	"github.com/hunterbdm/hello-requests/http"
+	"github.com/hunterbdm/hello-requests/http/cookiejar"
 	"github.com/hunterbdm/hello-requests/utils"
 	"io/ioutil"
 	"strings"
@@ -35,6 +36,11 @@ import (
 
 func Do(opts Options) (*Response, error) {
 	return request(opts)
+}
+
+func Jar() *cookiejar.Jar {
+	jar, _ := cookiejar.New(nil)
+	return jar
 }
 
 func request(opts Options) (*Response, error) {

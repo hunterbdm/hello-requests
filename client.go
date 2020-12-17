@@ -5,6 +5,7 @@ import (
 	"github.com/hunterbdm/hello-requests/mimic"
 	"github.com/hunterbdm/hello-requests/utils"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -16,6 +17,7 @@ var (
 	}
 
 	httpClientMap = map[string]http.Client{}
+	httpClientMapMutex = sync.RWMutex{}
 )
 
 type ClientSettings struct {
@@ -67,12 +69,19 @@ func SetDefaultClientSettings(cs ClientSettings) {
 func GetHttpClient(cs *ClientSettings) *http.Client {
 	fp := cs.Fingerprint()
 
+	httpClientMapMutex.RLock()
 	if client, ok := httpClientMap[fp]; ok {
+		httpClientMapMutex.RUnlock()
 		return &client
 	}
+	httpClientMapMutex.RUnlock()
 
 	newClient := setupHttpClient(cs)
+
+	httpClientMapMutex.Lock()
 	httpClientMap[fp] = newClient
+	httpClientMapMutex.Unlock()
+
 	return &newClient
 }
 

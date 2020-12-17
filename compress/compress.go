@@ -3,7 +3,7 @@ package compress
 import (
 	"bytes"
 	"compress/gzip"
-	"github.com/itchio/go-brotli/dec"
+	"github.com/dsnet/compress/brotli"
 	"io/ioutil"
 )
 
@@ -33,13 +33,11 @@ func decompressGzip(data []byte) (*[]byte, error) {
 }
 
 func decompressBrotli(data []byte) (*[]byte, error) {
-	brotliReader := dec.NewBrotliReader(bytes.NewBuffer(data))
-
-	defer brotliReader.Close()
-
-	if data, err := ioutil.ReadAll(brotliReader); err != nil {
+	if gr, err := brotli.NewReader(bytes.NewBuffer(data), nil); err != nil {
 		return nil, err
 	} else {
+		defer gr.Close()
+		data, _ = ioutil.ReadAll(gr)
 		return &data, nil
 	}
 }

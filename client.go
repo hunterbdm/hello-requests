@@ -127,11 +127,5 @@ func followHostRedirects(req *http.Request, via []*http.Request) error {
 
 // followNoRedirects is a CheckRedirect function that not follow any redirects
 func followNoRedirects(req *http.Request, via []*http.Request) error {
-	lastRequest := via[len(via) - 1]
-
-	if req.URL.Path == lastRequest.URL.Path {
-		return nil
-	}
-
 	return http.ErrUseLastResponse
 }

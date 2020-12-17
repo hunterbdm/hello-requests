@@ -69,6 +69,10 @@ func request(opts Options) (*Response, error) {
 			}
 			cookieHeader += cookie.String() + ";"
 		}
+
+		if cookieHeader != "" {
+			opts.Headers["Cookie"] = cookieHeader
+		}
 	}
 
 	// Build http.Request to pass into the http.Client

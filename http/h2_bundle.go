@@ -8749,14 +8749,18 @@ func (rl *http2clientConnReadLoop) processData(f *http2DataFrame) error {
 	cs := cc.streamByID(f.StreamID, f.StreamEnded())
 	data := f.Data()
 	if cs == nil {
-		cc.mu.Lock()
-		neverSent := cc.nextStreamID
-		cc.mu.Unlock()
-		if f.StreamID >= neverSent {
-			// We never asked for this.
-			cc.logf("http2: Transport received unsolicited DATA frame; closing connection")
-			return http2ConnectionError(http2ErrCodeProtocol)
-		}
+		// [hello-requests] Removed the check below because it would close
+		// connections that sent several assets over h2 push (nike)
+
+		//cc.mu.Lock()
+		//neverSent := cc.nextStreamID
+		//cc.mu.Unlock()
+		//if f.StreamID >= neverSent {
+		//	// We never asked for this.
+		//	cc.logf("http2: Transport received unsolicited DATA frame; closing connection")
+		//	return http2ConnectionError(http2ErrCodeProtocol)
+		//}
+
 		// We probably did ask for this, but canceled. Just ignore it.
 		// TODO: be stricter here? only silently ignore things which
 		// we canceled, but not things which were closed normally
@@ -9052,7 +9056,10 @@ func (rl *http2clientConnReadLoop) processPushPromise(f *http2PushPromiseFrame) 
 	// has set this setting and has received acknowledgement MUST
 	// treat the receipt of a PUSH_PROMISE frame as a connection
 	// error (Section 5.4.1) of type PROTOCOL_ERROR."
-	return http2ConnectionError(http2ErrCodeProtocol)
+
+	// [hello-requests] change here to fix http2 push throwing error
+	return nil;
+	//return http2ConnectionError(http2ErrCodeProtocol)
 }
 
 func (cc *http2ClientConn) writeStreamReset(streamID uint32, code http2ErrCode, err error) {

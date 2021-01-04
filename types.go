@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/hunterbdm/hello-requests/http/cookiejar"
-	"net/textproto"
 	"net/url"
 	"strings"
 )
@@ -55,9 +54,9 @@ func (o *Options) Validate() (*url.URL, error) {
 	}
 
 	// Format all headers in HeaderOrder
-	for i, header := range o.HeaderOrder {
-		o.HeaderOrder[i] = textproto.CanonicalMIMEHeaderKey(header)
-	}
+	//for i, header := range o.HeaderOrder {
+	//	o.HeaderOrder[i] = textproto.CanonicalMIMEHeaderKey(header)
+	//}
 
 
 	// Stringify JSON body if provided

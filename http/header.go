@@ -25,7 +25,18 @@ type Header map[string][]string
 // The key is case insensitive; it is canonicalized by
 // CanonicalHeaderKey.
 func (h Header) Add(key, value string) {
-	textproto.MIMEHeader(h).Add(key, value)
+	// [hello-requests] Changes here to fix headers upper/lower case issue
+
+	for headerName, headerValues := range h {
+		if strings.EqualFold(key, headerName) {
+			h[headerName] = append(headerValues, value)
+			return
+		}
+	}
+
+	h[key] = []string{value}
+
+	//textproto.MIMEHeader(h).Add(key, value)
 }
 
 // Set sets the header entries associated with key to the
@@ -34,7 +45,17 @@ func (h Header) Add(key, value string) {
 // canonicalized by textproto.CanonicalMIMEHeaderKey.
 // To use non-canonical keys, assign to the map directly.
 func (h Header) Set(key, value string) {
-	textproto.MIMEHeader(h).Set(key, value)
+	// [hello-requests] Changes here to fix headers upper/lower case issue
+	for headerName, _ := range h {
+		if strings.EqualFold(key, headerName) {
+			h[headerName] = []string{value}
+			return
+		}
+	}
+
+	h[key] = []string{value}
+
+	//textproto.MIMEHeader(h).Set(key, value)
 }
 
 // Get gets the first value associated with the given key. If
@@ -43,7 +64,16 @@ func (h Header) Set(key, value string) {
 // used to canonicalize the provided key. To use non-canonical keys,
 // access the map directly.
 func (h Header) Get(key string) string {
-	return textproto.MIMEHeader(h).Get(key)
+	// [hello-requests] Changes here to fix headers upper/lower case issue
+	for headerName, headerValues := range h {
+		if strings.EqualFold(key, headerName) {
+			return headerValues[0]
+		}
+	}
+
+	return ""
+
+	//return textproto.MIMEHeader(h).Get(key)
 }
 
 // Values returns all values associated with the given key.
@@ -52,7 +82,17 @@ func (h Header) Get(key string) string {
 // keys, access the map directly.
 // The returned slice is not a copy.
 func (h Header) Values(key string) []string {
-	return textproto.MIMEHeader(h).Values(key)
+	// [hello-requests] Changes here to fix headers upper/lower case issue
+
+	for headerName, headerValues := range h {
+		if strings.EqualFold(key, headerName) {
+			return headerValues
+		}
+	}
+
+	return []string{}
+
+	//return textproto.MIMEHeader(h).Values(key)
 }
 
 // get is like Get, but key must already be in CanonicalHeaderKey form.
@@ -74,7 +114,15 @@ func (h Header) has(key string) bool {
 // The key is case insensitive; it is canonicalized by
 // CanonicalHeaderKey.
 func (h Header) Del(key string) {
-	textproto.MIMEHeader(h).Del(key)
+	// [hello-requests] Changes here to fix headers upper/lower case issue
+
+	for headerName, _ := range h {
+		if strings.EqualFold(key, headerName) {
+			delete(h, headerName)
+		}
+	}
+
+	//textproto.MIMEHeader(h).Del(key)
 }
 
 // Write writes a header in wire format.

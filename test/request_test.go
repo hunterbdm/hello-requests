@@ -11,7 +11,7 @@ import (
 
 // go test ./test -v
 
-func TestGoogle(t *testing.T) {
+func _TestGoogle(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		_, err := request.Do(request.Options{
 			Method: "GET",
@@ -52,7 +52,7 @@ func TestGoogle(t *testing.T) {
 	}
 }
 
-func TestShopify(t *testing.T) {
+func _TestShopify(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		_, err := request.Do(request.Options{
 			Method: "GET",
@@ -93,7 +93,7 @@ func TestShopify(t *testing.T) {
 	}
 }
 
-func TestYS(t *testing.T) {
+func _TestYS(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		_, err := request.Do(request.Options{
 			Method: "GET",
@@ -134,7 +134,7 @@ func TestYS(t *testing.T) {
 	}
 }
 
-func TestChromeFP(t *testing.T) {
+func _TestChromeFP(t *testing.T) {
 	resp, err := request.Do(request.Options{
 		URL: "https://fp.dashe.ai/rc?bypass=encryption",
 		ParseJSONResponse: true,
@@ -166,7 +166,7 @@ func TestChromeFP(t *testing.T) {
 	}
 }
 
-func TestFirefoxFP(t *testing.T) {
+func _TestFirefoxFP(t *testing.T) {
 	resp, err := request.Do(request.Options{
 		URL: "https://fp.dashe.ai/rc?bypass=encryption",
 		ParseJSONResponse: true,
@@ -199,7 +199,7 @@ func TestFirefoxFP(t *testing.T) {
 	}
 }
 
-func TestBrotli(t *testing.T) {
+func _TestBrotli(t *testing.T) {
 	resp, err := request.Do(request.Options{
 		Method: "GET",
 		URL: "https://kith.com/products.json?limit=1",
@@ -241,7 +241,7 @@ func TestBrotli(t *testing.T) {
 	}
 }
 
-func TestSupremeIp(t *testing.T) {
+func _TestSupremeIp(t *testing.T) {
 	_, err := request.Do(request.Options{
 		Method: "GET",
 		URL: "https://151.101.46.133/shop.json",
@@ -281,7 +281,7 @@ func TestSupremeIp(t *testing.T) {
 	}
 }
 
-func TestH2Push(t *testing.T) {
+func _TestH2Push(t *testing.T) {
 	_, err := request.Do(request.Options{
 		Method: "GET",
 		URL: "https://www.nike.com/w/new-mens-clothing-3n82yz6ymx6znik1",
@@ -322,7 +322,7 @@ func TestH2Push(t *testing.T) {
 	}
 }
 
-func TestHeaders(t *testing.T) {
+func _TestHeaders(t *testing.T) {
 	_, err := request.Do(request.Options{
 		Method: "GET",
 		URL: "https://www.nike.com/w/new-mens-clothing-3n82yz6ymx6znik1",
@@ -369,7 +369,7 @@ func TestHeaders(t *testing.T) {
 	}
 }
 
-func TestGetRedirects(t *testing.T) {
+func _TestGetRedirects(t *testing.T) {
 	_, err := request.Do(request.Options{
 		Method: "GET",
 		URL: "https://kith.com/checkout",
@@ -473,31 +473,30 @@ func TestPostRedirects(t *testing.T) {
 			"referer": "https://kith.com/checkpoint",
 			"accept-encoding": "gzip, deflate, br",
 			"accept-language": "en-US,en;q=0.9",
-			"x-extra-header": "true",
+			"x-Extra-heaDer": "true",
 		},
 		HeaderOrder: request.HeaderOrder{
-			"content-length",
-			"cache-control",
-			"upgrade-insecure-requests",
-			"origin",
-			"content-type",
+			"Content-Length",
+			"Cache-Control",
+			"Upgrade-Insecure-Requests",
+			"Origin",
+			"Content-Type",
 			"User-Agent",
-			"accept",
-			"sec-fetch-site",
-			"sec-fetch-mode",
-			"sec-fetch-user",
-			"sec-fetch-dest",
-			"referer",
-			"accept-encoding",
-			"accept-language",
-			"cookie",
+			"Accept",
+			"Sec-Fetch-Site",
+			"Sec-Fetch-Mode",
+			"Sec-Fetch-User",
+			"Sec-Fetch-Dest",
+			"Referer",
+			"Accept-Encoding",
+			"Accept-Language",
+			"Cookie",
 		},
 		FollowRedirects: true,
 		Jar: jar,
 		ClientSettings: &cs,
 		Body: body,
 	})
-
 
 	if err != nil {
 		t.Error(err)

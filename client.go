@@ -24,8 +24,6 @@ type ClientSettings struct {
 	IdleTimeoutTime int
 	RequestTimeoutTime int
 
-	FollowRedirects bool
-	FollowHostRedirects bool
 	SkipCertChecks bool
 
 	Proxy string
@@ -36,8 +34,6 @@ type ClientSettings struct {
 func (cs *ClientSettings) Fingerprint() string {
 	return strconv.Itoa(cs.IdleTimeoutTime) +
 		strconv.Itoa(cs.RequestTimeoutTime) +
-		strconv.FormatBool(cs.FollowRedirects) +
-		strconv.FormatBool(cs.FollowHostRedirects) +
 		strconv.FormatBool(cs.SkipCertChecks) +
 		cs.Proxy +
 		cs.MimicBrowser
@@ -110,28 +106,9 @@ func setupHttpClient(cs *ClientSettings) http.Client {
 		Transport: &tp,
 	}
 
-	if !cs.FollowRedirects && cs.FollowHostRedirects {
-		client.CheckRedirect = followHostRedirects
-	} else if !cs.FollowRedirects {
-		client.CheckRedirect = followNoRedirects
-	}
-
-	// TODO SkipCertChecks
-	// TODO MimicBrowser
+	client.CheckRedirect = followNoRedirects
 
 	return client
-}
-
-// followHostRedirects is a CheckRedirect function that will only
-// follow if the redirect Path matches the previous requests Path
-func followHostRedirects(req *http.Request, via []*http.Request) error {
-	lastRequest := via[len(via) - 1]
-
-	if req.URL.Path == lastRequest.URL.Path {
-		return nil
-	}
-
-	return http.ErrUseLastResponse
 }
 
 // followNoRedirects is a CheckRedirect function that not follow any redirects

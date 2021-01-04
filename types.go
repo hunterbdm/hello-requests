@@ -25,6 +25,8 @@ type Options struct {
 	Jar            *cookiejar.Jar
 	ClientSettings *ClientSettings
 
+	FollowRedirects bool
+
 	// true if we should attempt to JSON parse the response, no matter the response "Content-Type" header
 	ParseJSONResponse bool
 }
@@ -35,6 +37,7 @@ type Response struct {
 	Body       string
 	Json       JSON
 	Request    *Options
+	Previous   *Response
 	Time       int
 }
 
@@ -55,6 +58,7 @@ func (o *Options) Validate() (*url.URL, error) {
 	for i, header := range o.HeaderOrder {
 		o.HeaderOrder[i] = textproto.CanonicalMIMEHeaderKey(header)
 	}
+
 
 	// Stringify JSON body if provided
 	if o.Json != nil {

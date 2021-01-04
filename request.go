@@ -35,7 +35,7 @@ import (
 // - Add PSK toggle
 
 func Do(opts Options) (*Response, error) {
-	return request(opts)
+	return request(opts, nil)
 }
 
 func Jar() *cookiejar.Jar {
@@ -43,7 +43,7 @@ func Jar() *cookiejar.Jar {
 	return jar
 }
 
-func request(opts Options) (*Response, error) {
+func request(opts Options, previous *Response) (*Response, error) {
 	if opts.ClientSettings == nil {
 		opts.ClientSettings = &defaultClientSettings
 	} else {
@@ -82,6 +82,7 @@ func request(opts Options) (*Response, error) {
 	}
 
 	for name, value := range opts.Headers {
+		//req.Header[name] = []string{value}
 		req.Header.Set(name, value)
 	}
 	// Add HeaderOrder onto request to be used later in the h2_bundle
@@ -127,12 +128,40 @@ func request(opts Options) (*Response, error) {
 		_ = json.Unmarshal([]byte(body), &jsonParsed)
 	}
 
-	return &Response{
+	res := Response{
 		StatusCode: resp.StatusCode,
 		Headers:    resp.Header,
 		Body:       body,
 		Json:       jsonParsed,
 		Request:    &opts,
 		Time:       int(end - start),
-	}, nil
+		Previous: 	previous,
+	}
+
+	// Return redirected response if we are following redirects
+	loc, ok := res.Headers["Location"]
+	if opts.FollowRedirects && ok && len(loc) > 0 {
+		newHeaders := opts.Headers
+		delete(newHeaders, "content-length")
+		delete(newHeaders, "Content-Length")
+		delete(newHeaders, "origin")
+		delete(newHeaders, "Origin")
+		delete(newHeaders, "content-type")
+		delete(newHeaders, "Content-Type")
+
+
+		newOpts := Options{
+			URL: loc[0],
+			Headers: newHeaders,
+			HeaderOrder: opts.HeaderOrder,
+			Jar: opts.Jar,
+			ClientSettings: opts.ClientSettings,
+			FollowRedirects: opts.FollowRedirects,
+			ParseJSONResponse: opts.ParseJSONResponse,
+		}
+
+		return request(newOpts, &res)
+	}
+
+	return &res, nil
 }

@@ -8180,7 +8180,7 @@ func (cc *http2ClientConn) encodeHeaders(req *Request, addGzipHeader bool, trail
 
 	// Header list size is ok. Write the headers.
 	enumerateHeaders(func(name, value string) {
-		//name = strings.ToLower(name)
+		name = strings.ToLower(name)
 		cc.writeHeader(name, value)
 		if traceHeaders {
 			http2traceWroteHeaderField(trace, name, value)

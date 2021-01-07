@@ -73,6 +73,8 @@ func request(opts Options, previous *Response) (*Response, error) {
 		if cookieHeader != "" {
 			opts.Headers["Cookie"] = cookieHeader
 		}
+	} else {
+		opts.Jar = Jar()
 	}
 
 	// Build http.Request to pass into the http.Client
@@ -116,9 +118,7 @@ func request(opts Options, previous *Response) (*Response, error) {
 	}
 
 	// Add response cookies to jar
-	if opts.Jar != nil {
-		opts.Jar.SetCookies(parsedUrl, utils.ReadSetCookies(resp.Header))
-	}
+	opts.Jar.SetCookies(parsedUrl, utils.ReadSetCookies(resp.Header))
 
 	var jsonParsed JSON
 	if opts.ParseJSONResponse {

@@ -414,7 +414,7 @@ func TestPostRedirects(t *testing.T) {
 	jar := request.Jar()
 	cs := request.ClientSettings{
 		SkipCertChecks: true,
-		Proxy: "127.0.0.1:8888",
+		//Proxy: "127.0.0.1:8888",
 	}
 
 	resp, err := request.Do(request.Options{
@@ -448,7 +448,18 @@ func TestPostRedirects(t *testing.T) {
 		ClientSettings: &cs,
 	})
 
+
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+
 	authTokenRegex, err := regexp.Compile("name=\"authenticity_token\" value=\"[^\"]+")
+	if err != nil {
+		t.Error(err)
+		return
+	}
 	authToken := authTokenRegex.FindString(resp.Body)
 	authToken = strings.Replace(authToken, "name=\"authenticity_token\" value=\"", "", -1)
 	authToken = url.QueryEscape(authToken)
@@ -473,24 +484,24 @@ func TestPostRedirects(t *testing.T) {
 			"referer": "https://kith.com/checkpoint",
 			"accept-encoding": "gzip, deflate, br",
 			"accept-language": "en-US,en;q=0.9",
-			"x-Extra-heaDer": "true",
+			"x-extra-header": "true",
 		},
 		HeaderOrder: request.HeaderOrder{
-			"Content-Length",
-			"Cache-Control",
-			"Upgrade-Insecure-Requests",
-			"Origin",
-			"Content-Type",
-			"User-Agent",
-			"Accept",
-			"Sec-Fetch-Site",
-			"Sec-Fetch-Mode",
-			"Sec-Fetch-User",
-			"Sec-Fetch-Dest",
-			"Referer",
-			"Accept-Encoding",
-			"Accept-Language",
-			"Cookie",
+			"content-length",
+			"cache-control",
+			"upgrade-insecure-requests",
+			"origin",
+			"content-type",
+			"user-agent",
+			"accept",
+			"sec-fetch-site",
+			"sec-fetch-mode",
+			"sec-fetch-user",
+			"sec-fetch-dest",
+			"referer",
+			"accept-encoding",
+			"accept-language",
+			"cookie",
 		},
 		FollowRedirects: true,
 		Jar: jar,

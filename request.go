@@ -148,6 +148,8 @@ func request(opts Options, previous *Response) (*Response, error) {
 		delete(newHeaders, "Origin")
 		delete(newHeaders, "content-type")
 		delete(newHeaders, "Content-Type")
+		delete(newHeaders, "host")
+		delete(newHeaders, "Host")
 
 
 		newOpts := Options{

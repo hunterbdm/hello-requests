@@ -3,8 +3,10 @@ package request
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/hunterbdm/hello-requests/http/cookiejar"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -102,7 +104,13 @@ func (form *JSON) QSMarshal() string {
 	values := url.Values{}
 
 	for name, val := range *form {
-		values.Add(name, val.(string))
+		if valFloat64, ok := val.(float64); ok {
+			values.Add(name, fmt.Sprintf("%g", valFloat64))
+		} else if valInt, ok := val.(int); ok {
+			values.Add(name, strconv.Itoa(valInt))
+		} else {
+			values.Add(name, val.(string))
+		}
 	}
 
 	return values.Encode()

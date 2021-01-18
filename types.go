@@ -21,6 +21,9 @@ type Options struct {
 	HeaderOrder    HeaderOrder
 	Body           string
 	Json           JSON
+	Form	   	   JSON
+	QS		   	   JSON
+
 	Jar            *cookiejar.Jar
 	ClientSettings *ClientSettings
 
@@ -72,6 +75,12 @@ func (o *Options) Validate() (*url.URL, error) {
 		}
 
 		o.Body = string(jsonBody)
+	} else if o.Form != nil {
+		if o.Body != "" {
+			return nil, errors.New("cannot provide both 'Body' and 'Form'")
+		}
+
+		o.Body = o.Form.QSMarshal()
 	}
 
 	// Validate URL
@@ -80,5 +89,21 @@ func (o *Options) Validate() (*url.URL, error) {
 		return nil, errors.New("invalid URL")
 	}
 
+	// Add raw query string body to url
+	if o.QS != nil {
+		parsedUrl.RawQuery = o.QS.QSMarshal()
+		o.URL = parsedUrl.String()
+	}
+
 	return parsedUrl, nil
+}
+
+func (form *JSON) QSMarshal() string {
+	values := url.Values{}
+
+	for name, val := range *form {
+		values.Add(name, val.(string))
+	}
+
+	return values.Encode()
 }

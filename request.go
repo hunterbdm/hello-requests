@@ -152,8 +152,14 @@ func request(opts Options, previous *Response) (*Response, error) {
 		delete(newHeaders, "Host")
 
 
+		url := loc[0]
+		// Check if the baseUrl is included in the location header
+		if strings.Index(url, "/") == 0 {
+			url = parsedUrl.Scheme + "://" + parsedUrl.Host + url
+		}
+
 		newOpts := Options{
-			URL: loc[0],
+			URL: url,
 			Headers: newHeaders,
 			HeaderOrder: opts.HeaderOrder,
 			Jar: opts.Jar,

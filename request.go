@@ -1,7 +1,10 @@
 package request
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"github.com/hunterbdm/hello-requests/compress"
 	"github.com/hunterbdm/hello-requests/http"
 	"github.com/hunterbdm/hello-requests/http/cookiejar"
@@ -43,6 +46,16 @@ func Jar() *cookiejar.Jar {
 	return jar
 }
 
+func base64Decode(message []byte) (b []byte, err error) {
+	var l int
+	b = make([]byte, base64.StdEncoding.DecodedLen(len(message)))
+	l, err = base64.StdEncoding.Decode(b, message)
+	if err != nil {
+		return
+	}
+	return b[:l], nil
+}
+
 func request(opts Options, previous *Response) (*Response, error) {
 	if opts.ClientSettings == nil {
 		opts.ClientSettings = &defaultClientSettings
@@ -78,7 +91,17 @@ func request(opts Options, previous *Response) (*Response, error) {
 	}
 
 	// Build http.Request to pass into the http.Client
-	req, err := http.NewRequest(opts.Method, opts.URL, strings.NewReader(opts.Body))
+	var req *http.Request
+	if opts.Base64Body {
+		byteBody, err := base64Decode([]byte(opts.Body))
+		if err != nil {
+			return nil, errors.New("bad base64 body")
+		}
+
+		req, err = http.NewRequest(opts.Method, opts.URL, bytes.NewReader(byteBody))
+	} else {
+		req, err = http.NewRequest(opts.Method, opts.URL, strings.NewReader(opts.Body))
+	}
 	if err != nil {
 		return nil, err
 	}

@@ -17,14 +17,15 @@ type HeaderOrder []string
 type JSON map[string]interface{}
 
 type Options struct {
-	Method         string
-	URL            string
-	Headers        Headers
-	HeaderOrder    HeaderOrder
-	Body           string
-	Json           JSON
-	Form	   	   JSON
-	QS		   	   JSON
+	Method      string
+	URL         string
+	Headers     Headers
+	HeaderOrder HeaderOrder
+	Body        string
+	Json        JSON
+	Form        JSON
+	QS          JSON
+	Base64Body  bool
 
 	Jar            *cookiejar.Jar
 	ClientSettings *ClientSettings

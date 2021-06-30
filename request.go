@@ -133,6 +133,8 @@ func request(opts Options, previous *Response) (*Response, error) {
 	if bodyBytes, err := ioutil.ReadAll(resp.Body); err != nil {
 		return nil, err
 	} else {
+		end = time.Now().UnixNano() / int64(time.Millisecond)
+
 		if encoding, ok := resp.Header["Content-Encoding"]; ok {
 			body = compress.Decompress(bodyBytes, encoding[0])
 		} else {

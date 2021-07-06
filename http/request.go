@@ -638,10 +638,10 @@ func (r *Request) write(w io.Writer, usingProxy bool, extraHeaders Header, waitF
 
 	// [hello-requests] Set(and not write) the missing headers here
 	// and they will written in the correct order later
-	if r.Header.Get("User-Agent") != "" {
+	if r.Header.Get("User-Agent") == "" {
 		r.Header.Set("User-Agent", defaultUserAgent)
 	}
-	if r.Header.Get("Host") != "" {
+	if r.Header.Get("Host") == "" {
 		r.Header.Set("Host", host)
 	}
 

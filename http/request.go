@@ -10,16 +10,16 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"github.com/hunterbdm/hello-requests/utls"
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/hunterbdm/hello-requests/http/httptrace"
+	"github.com/hunterbdm/hello-requests/utls"
 	"io"
 	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net"
-	"github.com/hunterbdm/hello-requests/http/httptrace"
 	"net/textproto"
 	"net/url"
 	urlpkg "net/url"
@@ -638,10 +638,10 @@ func (r *Request) write(w io.Writer, usingProxy bool, extraHeaders Header, waitF
 
 	// [hello-requests] Set(and not write) the missing headers here
 	// and they will written in the correct order later
-	if !r.Header.has("User-Agent") {
+	if r.Header.Get("User-Agent") != "" {
 		r.Header.Set("User-Agent", defaultUserAgent)
 	}
-	if !r.Header.has("Host") {
+	if r.Header.Get("Host") != "" {
 		r.Header.Set("Host", host)
 	}
 

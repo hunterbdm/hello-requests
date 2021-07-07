@@ -21,13 +21,13 @@ var (
 )
 
 type ClientSettings struct {
-	IdleTimeoutTime int
-	RequestTimeoutTime int
+	IdleTimeoutTime int `json:"IdleTimeoutTime"`
+	RequestTimeoutTime int `json:"RequestTimeoutTime"`
 
-	SkipCertChecks bool
+	SkipCertChecks bool `json:"SkipCertChecks"`
 
-	Proxy string
-	MimicBrowser string
+	Proxy string `json:"Proxy"`
+	MimicBrowser string `json:"MimicBrowser"`
 }
 
 // Fingerprint returns a string representation of the ClientSettings

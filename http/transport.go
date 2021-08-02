@@ -277,6 +277,7 @@ type Transport struct {
 	// [hello-requests] added MimicSettings here
 	MimicSettings *mimic.Settings
 	SkipCertChecks bool
+	CustomServerName string
 }
 
 // A cancelKey is the key of the reqCanceler map.
@@ -1506,6 +1507,10 @@ func (pconn *persistConn) addTLS(name string, trace *httptrace.ClientTrace) erro
 		cfg.InsecureSkipVerify = true
 	} else {
 		cfg.RootCAs = rootcerts.ServerCertPool()
+	}
+
+	if pconn.t.CustomServerName != "" {
+		cfg.ServerName = pconn.t.CustomServerName
 	}
 
 	var tlsConn *tls.UConn

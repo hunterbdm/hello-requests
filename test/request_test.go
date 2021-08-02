@@ -1,7 +1,13 @@
 package test
 
 import (
+	"crypto/tls"
+	"fmt"
 	request "github.com/hunterbdm/hello-requests"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"net/http/cookiejar"
 	"regexp"
 	"strconv"
 	"strings"
@@ -516,7 +522,7 @@ func _TestPostRedirects(t *testing.T) {
 	}
 }
 
-func TestBase64Body(t *testing.T) {
+func _TestBase64Body(t *testing.T) {
 	jar := request.Jar()
 	cs := request.ClientSettings{
 		SkipCertChecks: true,
@@ -573,4 +579,90 @@ func TestBase64Body(t *testing.T) {
 	} else {
 		t.Log(resp.StatusCode)
 	}
+}
+
+func TestFastly(t *testing.T) {
+	for i := 0; i < 1; i++ {
+		resp, err := request.Do(request.Options{
+			Method: "GET",
+			URL: "https://cache-bwi5175.hosts.fastly.net/api/session",
+			Headers: request.Headers{
+				"upgrade-insecure-requests": "1",
+				"user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.36",
+				"accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+				"sec-fetch-site": "none",
+				"sec-fetch-mode": "navigate",
+				"sec-fetch-user": "?1",
+				"sec-fetch-dest": "document",
+				"accept-encoding": "gzip, deflate, br",
+				"accept-language": "en-US,en;q=0.9",
+				"Host": "www.footlocker.com",
+			},
+			HeaderOrder: request.HeaderOrder{
+				"upgrade-insecure-requests",
+				"user-agent",
+				"accept",
+				"content-length",
+				"sec-fetch-site",
+				"sec-fetch-mode",
+				"sec-fetch-user",
+				"sec-fetch-dest",
+				"accept-encoding",
+				"accept-language",
+				"cookie",
+			},
+			ClientSettings: &request.ClientSettings{
+				IdleTimeoutTime: 5000 + i,
+				//Proxy: "127.0.0.1:8888",
+				SkipCertChecks: true,
+			},
+		})
+
+		if err != nil {
+			t.Error(err)
+			return
+		} else {
+			t.Log(resp.StatusCode, resp.Body)
+		}
+	}
+}
+
+func _TestFastly2(t *testing.T) {
+	cartHeaders := map[string]string{
+		"host": "www.footlocker.com",
+	}
+	requestUrl := "https://cache-bwi5175.hosts.fastly.net/api/session"
+	jar, _ := cookiejar.New(nil)
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+			ServerName:         "www.footlocker.com",
+		},
+	}
+	client := &http.Client{
+		Transport: transport,
+		Jar:       jar,
+	}
+	req, err := http.NewRequest("GET", requestUrl, nil)
+
+	req.Host = "www.footlocker.com"
+
+	if err != nil {
+		fmt.Println("Error Initiating Request")
+		fmt.Println(err)
+		return
+	}
+	for key, value := range cartHeaders {
+		req.Header.Set(key, value)
+	}
+
+	log.Println(req)
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error Sending Request")
+		fmt.Println(err)
+		return
+	}
+	bs, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(bs))
 }

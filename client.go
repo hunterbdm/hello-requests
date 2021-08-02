@@ -28,6 +28,8 @@ type ClientSettings struct {
 
 	Proxy string `json:"Proxy"`
 	MimicBrowser string `json:"MimicBrowser"`
+
+	CustomServerName string
 }
 
 // Fingerprint returns a string representation of the ClientSettings
@@ -90,6 +92,7 @@ func setupHttpClient(cs *ClientSettings) http.Client {
 		IdleConnTimeout: time.Millisecond * time.Duration(cs.IdleTimeoutTime),
 		MimicSettings: mimicSettings,
 		SkipCertChecks: cs.SkipCertChecks,
+		CustomServerName: cs.CustomServerName,
 	}
 
 	// Add proxy to Transport

@@ -63,9 +63,6 @@ func request(opts Options, previous *Response) (*Response, error) {
 		opts.ClientSettings.AddDefaults()
 	}
 
-	// Pull http.Client with ClientSettings options
-	httpClient := GetHttpClient(opts.ClientSettings)
-
 	// Check for errors in options provided
 	parsedUrl, err := opts.Validate()
 	if err != nil {
@@ -115,7 +112,14 @@ func request(opts Options, previous *Response) (*Response, error) {
 
 	if req.Header.Get("Host") != "" {
 		req.Host = req.Header.Get("Host")
+
+		if req.Host != parsedUrl.Host {
+			opts.ClientSettings.CustomServerName = req.Header.Get("Host")
+		}
 	}
+
+	// Pull http.Client with ClientSettings options
+	httpClient := GetHttpClient(opts.ClientSettings)
 
 	start := time.Now().UnixNano() / int64(time.Millisecond)
 	resp, err := httpClient.Do(req)

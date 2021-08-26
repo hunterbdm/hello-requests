@@ -739,3 +739,37 @@ func (e *FakeRecordSizeLimitExtension) Read(b []byte) (int, error) {
 	b[5] = byte(e.Limit & 0xff)
 	return e.Len(), io.EOF
 }
+
+
+type FakeApplicationSettingsExtension struct {
+}
+
+func (e *FakeApplicationSettingsExtension) writeToUConn(uc *UConn) error {
+	return nil
+}
+
+func (e *FakeApplicationSettingsExtension) Len() int {
+	return 9
+}
+
+func (e *FakeApplicationSettingsExtension) Read(b []byte) (int, error) {
+	if len(b) < e.Len() {
+		return 0, io.ErrShortBuffer
+	}
+	// https://tools.ietf.org/id/draft-vvv-tls-alps-00.html
+	b[0] = byte(fakeApplicationSettingsExtension >> 8)
+	b[1] = byte(fakeApplicationSettingsExtension & 0xff)
+
+	//00 03 02 68 32
+	extLen := 4
+	b[2] = byte((extLen + 1) >> 8)
+	b[3] = byte((extLen + 1))
+
+	b[4] = byte(0x00)
+	b[5] = byte(0x03)
+	b[6] = byte(0x02)
+	b[7] = byte(0x68)
+	b[8] = byte(0x32)
+
+	return e.Len(), io.EOF
+}

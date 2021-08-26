@@ -103,6 +103,7 @@ var (
 						Algorithms: []utls.CertCompressionAlgo{
 							utls.CertCompressionBrotli,
 						}},
+					&utls.FakeApplicationSettingsExtension{},
 					&utls.UtlsGREASEExtension{},
 					&utls.UtlsPaddingExtension{GetPaddingLen: utls.BoringPaddingStyle},
 				},

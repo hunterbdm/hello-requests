@@ -23,6 +23,8 @@ const (
 	fakeExtensionChannelID uint16 = 30032 // not IANA assigned
 
 	fakeRecordSizeLimit uint16 = 0x001c
+
+	fakeApplicationSettingsExtension uint16 = 17513
 )
 
 const (
